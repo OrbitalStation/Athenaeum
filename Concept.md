@@ -41,4 +41,6 @@ createObj = new Pokemon p.id p.name p.abilities
 
 `A * B * C` == `Tup A <| Tup B <| Tup C ()`
 
+* Comments start with `* `, not just an asterisk
+
 ```

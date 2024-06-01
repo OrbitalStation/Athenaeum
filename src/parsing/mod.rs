@@ -1,4 +1,4 @@
-modules! { stmt expr }
+modules! { stmt expr comment }
 
 peg::parser! {
     grammar parse() for str {
@@ -8,8 +8,8 @@ peg::parser! {
         rule _ = quiet!{__whitespace()*}
         rule __ = quiet!{__whitespace()+}
 
-        rule __unbox_expr(e: rule <Box <Expr>>) -> Expr
-            = ee:e() { *ee }
+        rule __unbox <T> (e: rule <Box <T>>) -> T
+            = x:e() { *x }
 
         rule __letter() = ['a'..='z' | 'A'..='Z']
         rule __digit() = ['0'..='9']
@@ -82,7 +82,7 @@ peg::parser! {
         }
 
         rule __expr_call() -> Box <Expr>
-            = seq:(__unbox_expr(<__expr()>) ++ __) _
+            = seq:(__unbox(<__expr()>) ++ __) _
         {
             Box::new(if seq.len() == 1 {
                 seq.into_iter().next().unwrap()
