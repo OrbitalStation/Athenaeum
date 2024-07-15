@@ -1,0 +1,97 @@
+* There are 3(4) types of literals: string, int and float
+* (Also the `fn` expression but IDK if that counts as literal)
+
+* ***************************** Int literals
+* `-1` and other negatives are not builtin
+* `-` is a unary operator
+* Why not make int and float literals a function instead of a built-in syntax?
+* Because:
+*   1). That would be ugly (my subjective opinion, doesn't really count)
+*   2). Syntactic sugar is okay as long as it has major advantages over not having it
+*       It does make the grammar more complex but in return alleviates *much* pain from the users
+*   3). It would turn potential users away from the language, which would really hurt
+* So, combining all three, the answer is:
+* It would be very ugly and unfamiliar or the people
+* We are so used to the Hindu-Arabic numeral system that moving from it would cause serious issues
+* The same reasoning applies to infix operators by the way
+* We are so used to writing `2 + 2` that it would be very awkward to type sth like
+*   `+ i.2 i.2`
+* So nope
+0 1 2 999 -1
+
+* Digit separators
+* Fairly commonly used feature that does not introduce serious changes to grammar or behaviour
+* So a little bit of syntactic sugar for that is okay
+100_000_000
+
+* Different bases
+* None built-in
+* Binary, octal and hexadecimal are written as `bin.10101`, `oct.777` and `hex.FF`
+*   (or `bin "10101"`, `oct "777"` and `hex "FF"` without the `.` notation)
+* They all take a string and basically are conversion functions from the corresponding int base
+* Why not just take a number like `bin 101`?
+* Because:
+*   a). Hex and >10 bases cannot be like that because they use letters and letters cannot appear
+*           in base 10 integer literals (strong argument)
+*   b). These functions would be a bit useless besides defining a literal
+*       Ones taking strings however can be used to convert arbitrary non-compile time strings
+*       Probably not very useful since they are all just aliases, but still
+*       Nice lil' stdlib shortcut (weak argument)
+*   c). They all can be defined similarly to `bin = fn str -> str :parseWithRadix Int 2 :unwrap`,
+*           whereas it would require a different non-very-trivial function to convert base 10 ints to base n ones
+* `bin` and `oct` also take string for consistency with `hex`
+
+* ***************************** Float literals
+* `-1.3` and other negatives are not builtin
+* `-` is a unary operator
+0.0 1.2345 99.99 -1.3
+
+* Digit separators
+100_000.000_999
+
+* Exponential
+* Not built-in since this is a rarely used feature plus it unnecessarily burdens the grammar
+* Instead of writing `3.14e10` you can write `3.14 * 10^10` or use specially defined function `exp`:
+*     `3.14 :exp 10`
+
+* ***************************** String literals
+"123"
+"sd 234"
+
+* There should be a warning for using ' and ` if " could be used
+
+* `a . b` == `(a "b")`
+* Used as a way to denote field access
+a.b
+
+* Escape sequences
+* Yep, they are not built-in
+* Use AA.String.EscapeSeq.*
+* Rust's "\n\t\v\x0A\0\u22A5\"\\"
+"{newline}{tab}{verticalTab}{xcode.0A}{xcode.00}{ucode.22A5}{quotes2}\"
+
+* Raw strings
+* No need for any since escape sequences are not built in
+"\ symbol is a backslash"
+
+* F-strings
+* Why? Because they are *very* useful
+* Adding syntactic sugar to, ahem, syntactic sugar is fine when it has such huge benefits
+* Below is equal to "4 = 4"
+"{2 + 2} = 4"
+
+* To escape curly braces just double them
+"{{ and }} are used to denote f-strings"
+
+* Character
+* No special syntax, use String.char
+char "c"
+
+* No prefixes or suffixes allowed (see `literalPreSufFixes.aa`)
+
+* Multiline strings
+* Just normal strings
+* Linefeeds remain inside
+"The first line
+The second line
+The third line"

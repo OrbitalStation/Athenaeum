@@ -1,0 +1,53 @@
+bot :sendMessage
+	|> with .text                  message
+    |> with .chatId                psychChatId
+    |> with .parseMode             ParseMode.HTML
+    |> with .disableWebPagePreview Yes
+    :build
+    :await
+
+* Where
+sendMessage :: Bot -> Builder (String -> Uint32 -> ParseMode -> Bool -> Future) ...
+sendMessage = fn bot -> builder fn text chatId parseMode disableWebPagePreview otherArgs -> do
+	val text, chatId, parseMode, disableWebPagePreview, otherArgs =
+		text                  :expect "Argument `text` is required",
+		chatId                :expect "Argument `chatId` is required",
+		parseMode             :or ParseMode.Markdown,
+		disableWebPagePreview :or No,
+		otherArgs             :or sthElse,
+	...
+
+
+
+
+* --New
+* `consteval` fn transforms `F_Panic Type` to `Type` by evaluating `F_IO` in comptime
+Builder :: Type -> Type
+Builder = fn OrigFnTy -> consteval do
+	val argsCount = AA.Fn.getArgsCount origFnTy :expect fn -> "Expected a function type, got {debug origFnTy}"
+	return type
+		.names    :: Array String argsCount *
+		.function :: OrigFnTy               *
+
+
+* --Old
+* `const Type` means Zig's `comptime type`
+* `const` fn ensures that the value given to it will be available at compile time
+* It returns the same value, but with an implicit mark that it is guaranteed to be comptime
+* `consteval` fn transforms `F_Panic Type` to `Type` by evaluating `F_IO` in comptime
+Builder :: const Type -> const Type
+Builder = fn OrigFnTy -> consteval do
+	val argsCount = AA.Fn.getArgsCount origFnTy :expect fn -> "Expected a function type, got {debug origFnTy}"
+	return type
+		.names    :: Array String argsCount *
+		.function :: OrigFnTy               *
+
+
+
+
+build :: Builder 
+build = fn builder -> 
+
+sendMessage = fn bot -> new Builder (array "text", "chatId", "parseMode", "disableWebPagePreview", "otherArgs") fn text chatId parseMode disableWebPagePreview otherArgs -> do
+	<original function>
+

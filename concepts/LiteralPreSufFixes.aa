@@ -1,0 +1,9 @@
+* Not allowed
+* Although `30_000ms` and `c"0-terminated!"` look great, it can be achieved without extra syntactic sugar:
+* `30_000 * ms` and `cstr "0-terminated!"`
+* ^ These don't lose much readability whilst also lightening the burden of extra syntactic sugar
+* They also are less needed because custom literal conversion is allowed
+
+* No built-in syntax for numbers even, only `_` separators
+
+sleep (30_000 * AA.Time.Second)

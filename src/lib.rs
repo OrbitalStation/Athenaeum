@@ -6,4 +6,7 @@ macro_rules! modules {
     )*};
 }
 
+modules! { ident }
+
 pub mod parsing;
+pub mod intermediate;

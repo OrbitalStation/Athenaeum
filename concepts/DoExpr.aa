@@ -1,0 +1,22 @@
+* `do` of 1 expression is equivalent to that expression, i.e. it does not perform monadic transformations
+* `do xxx` == `xxx`
+*
+* * `do` of 2+ expressions acts as a monadic combinator:
+* do xxx
+* do
+*   xxx
+*   yyy
+*
+* * Above unfolds into Haskell's
+* xxx
+* xxx >> yyy
+*
+* * Actually `do` performs a bit differently, since it also prepends `AA.MonadicMix.mmix` to the monadic chain
+* *   and appends `AA.MonadicMix.removePure` to the end
+* *   if there is more than a single statement:
+* do
+*   xxx
+*   yyy
+*
+* * Above unfolds into (`->>` is Athenaeum's `>>` of Haskell)
+* AA.MonadicMix.mmix ->> xxx ->> yyy ->> AA.MonadicMix.removePure

@@ -1,0 +1,15 @@
+* `println` can both print to console and panic on error
+* `(F_Out + F_Panic)`, however, is not very convenient to write,
+*   so it can be replaced with `AA.Effects.F_IO`
+* `F_IO` is much more side effect-y tho as it allows for in/out operations,
+*   panicking, global state mutations and much more,
+*   so dealing with an `F_IO` function would be painful
+* It is useful, however, when you are just prototyping or if this function
+*   is not intended to be called by something that cares about it,
+*   an example of such is `main`
+fizzbuzz :: (F_Out + F_Panic) Unit
+fizzbuzz = for 1..100 fn n -> mod n 3, mod n 5 |> fn
+    Yes, Yes -> println "FizzBuzz"
+    Yes, No  -> println "Fizz"
+    No,  Yes -> println "Buzz"
+    No,  No  -> println "{x}"

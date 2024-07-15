@@ -1,0 +1,21 @@
+* `?Type` == `Option Type`
+* `!Type` == `Result Type Anyhow.Error`
+* `Type * Type` == Rust's `(Type, Type)`
+* `Type -> Type` == Rust's `Fn(Type) -> Type`
+* `MonadicType + MonadicType` == Combined monads
+
+* `a.b` is the same as `(a "b")`
+* `.b` is the same as `"b"`
+
+Tup = fn a b -> type
+    .data :: a *
+    .next :: b *
+
+Option = fn a -> type
+    .Some :: a +
+    .None      +
+
+Foo = type
+	.id      :: Int32  *
+	.fooName :: String *
+

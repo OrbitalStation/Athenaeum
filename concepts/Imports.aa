@@ -1,0 +1,56 @@
+* All sibling modules are available by `Sib.` their name
+* All sibling folders containing at least 1 module are also available by `Sib.` their name
+* There is also a special file `Build.aa` placed in the root of the project
+* It is used to configure the project, kinda like `Cargo.toml` and `build.rs` in Rust
+* For a structure:
+*
+* root
+* \__ src
+*     \__ Foo.aa
+*     \__ Bar.aa
+*     \__ Oops
+*         \__ hi.txt
+*     \__ Quux
+*         \__ Chuk.aa
+*         \__ Gek.aa
+* \__ Build.aa
+*
+* In the `Foo` module there will be available `Sib.Bar` and `Sib.Quux`
+* Everything configured as `prelude` or similar in `Build.aa` is also available in `Foo`
+* Notice how `Oops` is not accessible for it does not contain Athenaeum code files
+* `Sib.Bar` is be a module with the contents of `Bar.aa`
+* `Sib.Quux` only contains two submodules - `Sib.Quux.Chuk` and `Sib.Quux.Gek` and no other content
+* Note that `src` dir is not visible in `foo`
+
+* Imports sibling module `AAA` into outer scope
+* `in Sib only AAA`
+
+* Imports submodule `BBB` from module `AAA`
+* Not valid syntax
+* Use `BBB = AAA.BBB` or `in AAA only BBB` instead
+* `in AAA.BBB`
+
+* Imports submodule `BBB` from module `AAA` as `CCC`
+* Not valid syntax
+* Use `CCC = AAA.BBB` or `in AAA only BBB as CCC` instead
+* `in AAA.BBB as CCC`
+
+* Imports `CCC` from submodule `BBB` of module `AAA`
+in AAA.BBB only CCC
+
+* Imports everything from module/other structure `AAA`
+in AAA *
+
+* Imports everything from module/other structure `AAA` except for `bbb`
+in AAA * except bbb
+
+* Import only `bbb` and `ccc` from module/other structure `AAA`
+in AAA only bbb ccc
+
+in AA.Regex only Regex
+
+* You cannot import `Iterator (..)` like in Haskell,
+*   so you have to manually import every function you need
+in AA.Iterator only Iterator map filter
+
+in AA.State only stateful _:=_

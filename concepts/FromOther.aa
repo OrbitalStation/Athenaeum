@@ -1,0 +1,452 @@
+* Rust
+fn num_iters(cx: f64, cy: f64, max_iters: u32) -> u32 {
+    let mut z = Complex::new(0.0, 0.0);
+    let c = Complex::new(cx, cy);
+
+    for i in 0..=max_iters {
+        if z.norm() > 2.0 {
+            return i;
+        }
+        z = z * z + c;
+    }
+
+    max_iters
+}
+
+* Athenaeum
+numIters :: Float64 -> Float64 -> Uint32 -> Uint32
+numIters = fn cx cy maxIters -> early stateful do
+    val z = state <| new Complex 0 0
+    val c = new Complex cx cy
+    for 0..maxIters fn i ->
+        if z :norm > 2 then return i
+        z := z * z + c
+    return Ok maxIters
+
+* Rust
+fn hex2rgb(hex: &str) -> Result <Vec <u8>, String> {
+    let hex = hex.trim_start_matches('#');
+    if hex.len() != 6 {
+        return Err("Invalid HEX color length".to_string());
+    }
+
+    let r = u8::from_str_radix(&hex[0..2], 16).map_err(|_| "Invalid HEX color")?;
+    let g = u8::from_str_radix(&hex[2..4], 16).map_err(|_| "Invalid HEX color")?;
+    let b = u8::from_str_radix(&hex[4..6], 16).map_err(|_| "Invalid HEX color")?;
+
+    Ok(vec![r, g, b])
+}
+
+* Athenaeum
+
+* Um, it actually *is*, lol
+* `!_` can just have lower precedence that fn calls
+* Not just `Array Uint8 3` for three reasons:
+*   1. It allows to use `!GenericTy[arg1, arg2]` and similar instead of wrapping it parentheses
+*       due to precedence
+*   2. It makes generic types appear more explicit and easier to find
+*   3. It looks great
+*   4. (maybe) Because types are encoded in lambda calculus notation, i.e. the Church notation
+*       Thus they take a function that inspects the insides and so brackets are required to distinguish
+*       That is probably not an actual argument since it would require either overloaded operators that work
+*           on functions, which is bad because functions cannot be primary objects in such a system
+RGB = Array Uint8 3
+
+hex2rgb :: String -> !RGB
+hex2rgb = fn hex -> early do
+    val hex = hex :?stripPrefix "#"
+    if hex :len != 6 then return err <| error "Invalid HEX color length"
+    val r = hex[1..2] :parseWithRadix Uint8 16 :?mapErr fn -> badFormat
+    val g = hex[3..4] :parseWithRadix Uint8 16 :?mapErr fn -> badFormat
+    val b = hex[5..6] :parseWithRadix Uint8 16 :?mapErr fn -> badFormat
+    return Ok (array r, g, b)
+where
+    badFormat = error "Invalid HEX color"
+
+* Rust
+fn lerp_color(color1: &[u8; 3], color2: &[u8; 3], value: f64) -> [u8; 3] {
+    [
+        (color1[0] as f64 + (color2[0] as f64 - color1[0] as f64) * value) as u8,
+        (color1[1] as f64 + (color2[1] as f64 - color1[1] as f64) * value) as u8,
+        (color1[2] as f64 + (color2[2] as f64 - color1[2] as f64) * value) as u8,
+    ]
+}
+
+* Athenaeum
+lerpColor :: RGB -> RGB -> Float64 -> RGB
+lerpColor = fn x y value -> array
+    x[1] :into Float64 + (y[1] :into Float64 - x[1] :into Float64) * value :into Uint8,
+    x[2] :into Float64 + (y[2] :into Float64 - x[2] :into Float64) * value :into Uint8,
+    x[3] :into Float64 + (y[3] :into Float64 - x[3] :into Float64) * value :into Uint8,
+    
+
+* Rust
+fn get_gradient(gradient_colors: Vec<&str>, max_iters: u32) -> Vec<[u8; 3]> {
+    let mut colors = vec![];
+    let mut gradient_colors_rgb = vec![];
+    for color in &gradient_colors {
+        let rgb = hex2rgb(color).unwrap();
+        gradient_colors_rgb.push([rgb[0], rgb[1], rgb[2]]);
+    }
+
+    for i in 0..max_iters {
+        let color_index = (i as usize * (gradient_colors.len() - 1)) / max_iters as usize;
+        let color_value = (i as f64 * (gradient_colors.len() as f64 - 1.0)) / max_iters as f64;
+        let value = color_value % 1.0;
+        colors.push(lerp_color(
+            &gradient_colors_rgb[color_index],
+            &gradient_colors_rgb[color_index + 1],
+            value,
+        ));
+    }
+
+    colors
+}
+
+* Athenaeum
+getGradient :: List String -> Uint32 -> !List RGB
+getGradient = fn gradientColors maxIters -> stateful do
+    val colors = state <| list empty
+    val gradientColorsRGB = state <| list empty
+    for gradientColors fn color -> do
+        val rgb = ?hex2rgb color
+        gradientColorsRGB := gradientColorsRGB :push (array rgb[1], rgb[2], rgb[3])
+    for 0..<maxIters fn i -> do
+        val colorIndex = (i * (gradientColors :len - 1) :into Usize) / maxIters :into USize
+        val colorValue = (i :into Float64 * (gradientColors :len :into Float64 - 1.0)) / (maxIters :into Float64)
+        val value = colorValue % 1.0
+        colors := colors :push <| lerpColor
+            gradientColorsRGB[colorIndex + 1]
+            gradientColorsRGB[colorIndex + 2]
+            value
+    return Ok colors
+
+* Rust
+#[tokio::main]
+async fn main() -> Result<(), EchoError> {
+    let state = State {
+        counter: 0,
+    };
+
+    let echo_ref = ActorRef::new("echo", Echo{}, state, 100000).await?;
+
+    println!("Sent Ping");
+    echo_ref.send(Message::Ping).await?;
+
+    println!("Sent Ping and ask response");
+    let pong = echo_ref.ask(Message::Ping).await?;
+    println!("Got {:?}", pong);
+
+    let _ = echo_ref.stop().await;
+    Ok(())
+}
+
+* Athenaeum
+main :: F_IO !Unit
+Tokio.main out main = async do
+    val state = new State 0
+
+    val echoRef = new ActorRef "echo" (new Echo) state 100_000 :?await
+
+    println "Sent Ping"
+    echoRef :send Message.Ping :?await
+
+    println "Sent Ping and ask response"
+    val pong = echoRef :ask Message.Ping :?await
+    println "Got {debug pong}"
+
+    val _ := echoRef :stop :?await
+    return Ok empty
+
+* Python
+async def create_taiga_issue(update: Update, data: dict) -> dict:
+    message = update.effective_message
+    profile = data["profile"]
+    client_info = (
+        f'**Пользователь**: {profile.get("name", "ИМЯ")} {profile.get("age", "ВОЗРАСТ")}\n'
+        f'**Ссылка на телеграм**: {profile.get("messengerLink", "У пользователя нет username")}\n'
+        f'**Ссылка на диалог**: {urljoin(config.FRONT_URL, config.ENDPOINT_CONVERSATIONS)}?clientId={profile.get("clientId", "")}\n'
+    )
+
+    date = datetime.datetime.now().astimezone(config.LOCAL_TIME_ZONE).date()
+    date_str = date.strftime("%d-%m-%y")
+
+    if message.text_html_urled is None:
+        message_text = ""
+        message_short = ""
+    else:
+        message_text = "\n" + html_to_md(message.text_html_urled)
+        message_short = f"{message.text[:200]}..." if len(message.text) > 200 else message.text
+        message_short = ": " + message_short.replace("\n", " ")
+    if message.audio or message.document or message.animation or message.video or message.voice:
+        media_text = "\n<Вложение см. в диалоге>"
+    else:
+        media_text = ""
+    subject = f"Заявка в поддержку от {date_str}{message_short}"
+    description = f"{client_info}{message_text}{media_text}\n"
+
+    try:
+        issue = await taiga.create_issue(subject, description)
+    except Exception as e:
+        log.error(f"Failed creation of issue in Taiga: {e}")
+        return None
+
+    if issue:
+        issue["issue_no"] = f'{date_str}_{issue["issue_id"]}'
+    return issue
+
+* Athenaeum
+createTaigaIssue :: Update -> Dict -> ?Dict
+createTaigaIssue = async fn update data -> do
+    val message = update :effectiveMessage
+    val profile = data["profile"]
+    val clientInfo = do
+        val name = profile :get "name" :or "ИМЯ"
+        val age  = profile :get "age"  :or "ВОЗРАСТ"
+
+        val messengerLink = profile :get "messengerLink" :or "У пользователя нет username"
+
+        val dialogUrl = Config.FRONT_URL ++ Config.ENDPOINT_CONVERSATIONS
+        val clientId  = profile :get "clientId" :or ""
+
+        return "
+            **Пользователь**: {name} {age}
+            **Ссылка на телеграм**: {messengerLink}
+            **Ссылка на диалог**: {dialogUrl}?clientId={clientId}
+            "
+
+    val date = AA.DateTime.now
+        :asTimeZone Config.LOCAL_TIME_ZONE
+        :date
+        :strFTime "%d-%m-%y"
+
+    val messageText, messageShort = message :textHtmlUrled |> fn
+        None -> "", ""
+        Some text -> pure do
+            val messageText = newline ++ htmlToMd text
+            val messageShort =
+                if message.text :len > 200 then
+                    message.text[..<200] ++ "..."
+                else
+                    message.text
+            val messageShort = ": " ++ (messageShort :replace newline :with " ")
+            return messageText, messageShort
+    val mediaText =
+        if message.audio :isSome or message.document :isSome or message.animation :isSome or message.video :isSome or message.voice :isSome then
+            "{newline}<Вложение см. в диалоге>"
+        else
+            ""
+
+    val subject = "Заявка в поддержку от {date}{messageShort}"
+    val description = clientInfo ++ messageText ++ mediaText ++ newline
+
+    val issue = Taiga.createIssue subject description
+        :inspectErr fn e -> ?Log.error "Failed creation of issue in Taiga: {e}"
+
+    return issue :map fn issue ->
+    		issue |> with .issueNo "{date}_{issue['issueId']}"
+
+
+* Crystal
+max = 100
+
+sieve = Array.new(max + 1, true)
+sieve[0] = false
+sieve[1] = false
+
+2.step(to: Math.sqrt(max)) do |i|
+  if sieve[i]
+    (i * i).step(to: max, by: i) do |j|
+      sieve[j] = false
+    end
+  end
+end
+
+sieve.each_with_index do |prime, number|
+  if prime
+    puts number
+  end
+end
+
+* Athenaeum
+MAX = 100
+
+main :: F_IO Unit
+out main = do
+    val sieve = state <| array Yes :repeat (MAX + 1)
+    sieve[1] := No
+    sieve[2] := No
+    for 3..√MAX fn i -> do
+        if sieve[i] then
+            for (i * i..MAX :stepBy i) fn j -> do
+                sieve[j] := No
+	
+    for (sieve :iter :enumerate) fn prime, number -> do
+        if prime then
+            println "{number}"
+
+* Python
+async def notify_psych(client_profile: dict, psych_chat_id: str):
+    log.debug("NOTIFY PSY" + str(psych_chat_id) + str(client_profile))
+
+    message = "<b>❣️📩 Вам написал пользователь 📩❣️</b> " \
+              + str(client_profile.get("name", "ИМЯ")) + str(client_profile.get("age", "ВОЗРАСТ")) + "\n" \
+              + str(f"{config.FRONT_URL}{config.ENDPOINT_CONVERSATIONS}?clientId={client_profile.get('clientId', '')}")\
+              + "\n"
+
+    await bot.sendMessage(
+        chat_id=psych_chat_id,
+        text=message,
+        parse_mode=ParseMode.HTML,
+        disable_web_page_preview=True,
+    )
+
+* Athenaeum
+notifyPsych = async fn clientProfile psychChatId -> do
+	log :debug "NOTIFY PSY {psychChatId}{clientProfile}"
+    
+    val message = "
+    		<b>❣️📩 Вам написал пользователь 📩❣️</b> {clientProfile :get 'name' :or 'ИМЯ'}{clientProfile :get 'age' :or 'ВОЗРАСТ'}
+        {config.FRONT_URL}{config.ENDPOINT_CONVERSATIONS}?clientId={clientProfile :get 'clientId' :or ''}
+        "
+
+    bot :sendMessage
+        |> with .text                  message
+        |> with .chatId                psychChatId
+        |> with .parseMode             ParseMode.HTML
+        |> with .disableWebPagePreview Yes
+        :build
+        :await
+
+* Rust
+fn main() {
+    let pangram = "the quick brown fox jumps over the lazy dog";
+    println!("Pangram: {}", pangram);
+
+    println!("Words in reverse");
+    for word in pangram.split_whitespace().rev() {
+        println!("> {}", word);
+    }
+
+    let mut chars = pangram.chars().collect::<Vec <_>>();
+    chars.sort();
+    chars.dedup();
+
+    let mut string = String::new();
+    for c in chars {
+        string.push(c);
+        string.push_str(", ");
+    }
+
+    let chars_to_trim = &[' ', ','];
+    let trimmed_str = string.trim_matches(chars_to_trim);
+    println!("Used characters: {}", trimmed_str);
+
+    let alice = String::from("I like dogs");
+    let bob = alice.replace("dog", "cat");
+
+    println!("Alice says: {}", alice);
+    println!("Bob says: {}", bob);
+}
+
+* Athenaeum
+main :: F_IO Unit
+main = do
+	val pangram = "the quick brown fox jumps over the lazy dog"
+	println "Pangram: {pangram}"
+	
+	println "Words in reverse"
+	for (pangram :splitw :reverse) fn word -> do
+		println "> {word}"
+	
+	val chars = state <| pangram :iter :collect List
+	chars := quicksort chars :ascending
+	chars := chars :deDuplicate
+	
+	val string = state <| str ""
+	for chars fn ch -> do
+		string :++= "{ch}, "
+	
+	val charsToTrim = " ,"
+	val trimmedStr = string :stripByAnyOf charsToTrim
+	println "Used characters: {trimmedStr}"
+	
+	val alice = str "I like dogs"
+	val bob = alice :replace "dog" :with "cat"
+	
+	println "Alice says: {alice}"
+	println "Bob says: {bob}"
+
+* Gluon
+let de @ { Deserialize, ? } = import! std.json.de
+let ser @ { Serialize, ? } = import! std.json.ser
+let { Result, ? } = import! std.result
+
+#[derive(Serialize, Deserialize)]
+type Vec = { x : Float, y : Float, name : Option String }
+
+let result =
+    let input = r#"{ "x": 123, "y": 456.78, "name": null }"#
+    do v = de.deserialize input
+    let v : Vec = v
+    let updated = { x = v.x, y = v.y, name = Some "Vector" }
+    ser.to_string_pretty updated
+
+match result with
+| Ok s -> s
+| Err err -> err
+
+* Athenaeum
+in AA.SerdeJson only Json
+
+Vec = type
+	.x    :: Float32 *
+	.y    :: Float32 *
+	.name :: ?String *
+
+main :: F_IO !Unit
+out main = do
+	val result = ?do
+		val input = '{ "x": 123, "y": 456.78, "name": null }'
+		val v = input |> ?deserialize Json :to Vec
+		val updated = new Vec v.x v.y (Some "Vector")
+		break updated |> ?serialize Json
+	println "{result}"
+
+* Elm
+import Html exposing (..)
+
+main =
+  div []
+    [ h1 [] [ text "My Grocery List" ]
+    , ul []
+        [ li [] [ text "Black Beans" ]
+        , li [] [ text "Limes" ]
+        , li [] [ text "Greek Yogurt" ]
+        , li [] [ text "Cilantro" ]
+        , li [] [ text "Honey" ]
+        , li [] [ text "Sweet Potatoes" ]
+        , li [] [ text "Cumin" ]
+        , li [] [ text "Chili Powder" ]
+        , li [] [ text "Quinoa" ]
+        ]
+    ]
+
+* Athenaeum
+in AA.Html.Tags *
+
+main :: Html
+main = html do
+	div do
+		h1 do text "My Grocery List"
+		ul do
+			li do text "Black Beans"
+			li do text "Limes"
+		    li do text "Greek Yogurt"
+		    li do text "Cilantro"
+		    li do text "Honey"
+		    li do text "Sweet Potatoes"
+		    li do text "Cumin"
+		    li do text "Chili Powder"
+		    li do text "Quinoa"
+

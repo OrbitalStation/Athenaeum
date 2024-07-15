@@ -1,4 +1,6 @@
-modules! { ty ident call }
+use crate::*;
+
+modules! { ty call }
 
 #[derive(Debug, Clone)]
 pub enum Expr {

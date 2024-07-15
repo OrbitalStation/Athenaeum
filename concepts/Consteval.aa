@@ -1,0 +1,29 @@
+* Consider these two statements, one with `consteval` and one without:
+N1 =           do scanln :unwrap :parse Int32 :unwrap
+N2 = consteval do scanln :unwrap :parse Int32 :unwrap
+
+* Their types are as follows(ignoring `F_Div` for now):
+* `N2` does not have any monadic effects in it
+* The thing is, `consteval` evaluates `F_IO` in compile time,
+*     meaning that `scanln`, parsing and unwraps will all occur during compilation
+* 	  and not runtime, leaving the value without the side effects
+* In fact, `consteval` evaluates anything in compile time, not only `F_IO`,
+*     but that is usually automatically done by the compiler and so kinda pointless
+* It is useful however when you need to be 100% sure the value is known during compilation
+N1 :: (F_In + F_Panic) Int32
+N2 :: Int32
+
+* `N2` can now be used in const context, although such a thing does not exist in `Athenaeum`,
+*     or more precisely it is not a separate thing, it's just naturally built in to the language
+myArray :: Array 14 N2
+myArray = array 14 :repeat N2
+
+* Why `consteval` and not just `const`?
+* Because functions are verbs and should describe action
+* Why not `comptime`?
+* For the same reason as above
+* Why not `comptimeeval`?
+* Fair point, that would be better, but that's just... eh, ugly
+* Plus `consteval` is a term familiar to C++ developers where it performs a
+*     very similar function, so that's nice
+

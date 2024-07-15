@@ -1,0 +1,57 @@
+* String
+* Special literal syntax
+"abcdef"
+
+* Tuple
+* `_,_` operator
+a, b
+a, b, c
+
+* Tuple of `(A * B) * C`
+* Note that `(a, b), c` != `a, b, c`
+*     and `(A * B) * C` != `A * B * C`
+* `(_)` operator does not just wrap an expression, but also "freezes" tuples and tuple types
+*     so they are not extended by `_,_` and `_*_` accordingly
+(a, b), c
+
+* Tuple of one element
+* `_,` operator used on a tuple does nothing (=identity), this is used to allow trailing commas
+* `_,` operator used on a non-tuple converts it to a one element tuple
+a,
+
+* Empty tuple (of type `Unit`)
+* Why `empty` and not `unit`?
+* That way constructions like `array empty` and `vec empty` look nice
+* Other than that, manual creation of Unit type is pretty rare, so it's fine
+empty
+
+* Array
+array a, b, c
+
+* Array of tuples
+array (1, 2), (3, 4)
+
+* List
+* Rust's `Vec`
+list a, b, c
+
+* Dictionary
+* `_⟜_` operator creates a key-value pair
+* Notice the trailing comma - made possible by the `_,` operator
+dictionary
+	"abc" ⟜ 123,
+	"def" ⟜ 456,
+
+* Mathematical vector type
+vec 0.0, 0.0
+
+* `:row` or `:column` to specify how to multiply with matrix
+(vec 1, 0 :row) * (AA.Matrix.identity Int32 2×2)
+
+* Matrix
+* `_×_` operator creates a `Dimensions` type
+* `_×_` defined in `AA.Dimensions`
+matrix 3×3
+	1, 2, 3,
+	4, 5, 6,
+	7, 8, 9,

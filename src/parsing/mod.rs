@@ -1,3 +1,5 @@
+use crate::*;
+
 modules! { stmt expr comment }
 
 peg::parser! {
@@ -13,13 +15,11 @@ peg::parser! {
 
         rule __letter() = ['a'..='z' | 'A'..='Z']
         rule __digit() = ['0'..='9']
-        rule ident() -> String
+        rule ident() -> Ident
             = x:$(__letter() (__letter() / __digit())*)
-        {?
-            if ["type"].contains(&x) {
-                Err("expected an identifier, not a keyword")
-            } else {
-                Ok(x.to_string())
+        {
+            Ident {
+                ident: x.to_string()
             }
         }
 
@@ -66,13 +66,27 @@ peg::parser! {
         rule ty() -> Type
             = expr()
 
+        /* FIXME:
+        * First-pass collecting statements
+        * Processing `in` statements
+        * Collecting operator statements(`operator` is not a macro even though looks like one)
+        * Building AST
+        * Unfolding operators everywhere
+        * Unfolding all the macros in each of the remaining statements
+        * Processing AST
+        */
+
+        /* FIXME
+        Read about the monads, use them(try Haskell) and understand them
+        Read about parallel programming, use it(in Rust, Go, Haskell) and understand them
+        ^ This all is necessary to improve language design
+        */
+
         // ****************** Expr ******************
         rule __expr_ident() -> Box <Expr>
             = ident:ident()
         {
-            Box::new(Expr::Ident(Ident {
-                ident
-            }))
+            Box::new(Expr::Ident(ident))
         }
 
         rule __expr_parenthesised() -> Box <Expr>
@@ -82,7 +96,7 @@ peg::parser! {
         }
 
         rule __expr_call() -> Box <Expr>
-            = seq:(__unbox(<__expr()>) ++ __) _
+            = seq:(__unbox(<__expr()>) ++ __)
         {
             Box::new(if seq.len() == 1 {
                 seq.into_iter().next().unwrap()
@@ -94,24 +108,28 @@ peg::parser! {
         }
 
         rule __expr() -> Box <Expr>
-            = __expr_ident()
-            / __expr_parenthesised()
+            = __expr_parenthesised()
             / expr_type()
+            / __expr_ident()
 
         pub rule expr() -> Box <Expr>
-            = __expr_call()
+            = x:__expr_call() _ { x }
 
         // ****************** Stmt ******************
         rule __stmt_tab_lines()
             = (("\t" / "    ") [^ '\n']* "\n") / __
 
+        rule __stmt_arg() -> Ident
+            = __ name:ident() { name }
+
         rule stmt() -> Stmt
-            = name:ident() _ "=" _ body:$([^ '\n']* "\n" __stmt_tab_lines()*)
-        {?
-            Ok(Stmt {
+            = name:ident() args:__stmt_arg()* _ "=" _ body:$([^ '\n']* "\n" __stmt_tab_lines()*)
+        {
+            Stmt {
                 name,
-                body: expr(body).map_err(|_| "err parsing body")?
-            })
+                args,
+                body: expr(body).unwrap()
+            }
         }
 
         pub rule stmts() -> Vec <Stmt>

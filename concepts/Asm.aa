@@ -1,0 +1,31 @@
+in AA.Asm *
+
+* ; NASM
+* global pow
+* pow:
+* .start:
+*     mov  ebx, eax
+* .loop:
+*     cmp  ecx, 1
+*     je   .endLoop
+*     imul eax, ebx
+*     dec  ecx
+*     jmp  .loop
+* .endLoop:
+*     ret
+
+* `where` clauses are visible in type annotation
+* `branch .start` is just another way to write `branch.start` or `branch "start"`
+* `do` is needed to introduce indentation
+pow :: In eax -> In ecx -> Out eax + Change eax, ebx, ecx
+pow = asm do
+    branch .start do
+        mov  ebx eax
+    branch .loop do
+        cmp  ecx 1
+        je   .endLoop
+        imul eax ebx
+        dec  ecx
+        jmp  .loop
+    branch .endLoop do
+        ret

@@ -8,13 +8,13 @@ pub enum TypeExpr {
 
 #[derive(Debug, Clone)]
 pub struct TypeProductField {
-    pub name: String,
+    pub name: Ident,
     pub ty: Type
 }
 
 #[derive(Debug, Clone)]
 pub struct TypeSumVariant {
-    pub name: String,
+    pub name: Ident,
     pub attached: Option <Type>
 }
 

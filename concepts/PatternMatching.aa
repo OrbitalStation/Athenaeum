@@ -1,0 +1,78 @@
+* I had to say no to the `choose` expression because:
+* 1. It was extra syntax and thus - bad
+*    It couldn't have been an ordinary function because it had pattern-matching feature
+*    How would the expression below be transformed into an ordinary fn call?
+*    `choose x
+*        y => y`
+*    It introduces a new variable `y` which is then used
+*    Normal function cannot do this, and so `choose` must be built-in
+* 2. It and `fn` were the only two places where pattern-matching occurred,
+*        which by that point looked a bit more than just a syntactic sugar
+*    (also in `do` but its merely sugar over `fn` so doesn't count)
+* 3. `fn` can easily do its job(see the example below)
+* 4. `fn` replacement allows for shorter code + it looks really close to Haskell's pattern-matching
+* 5. `choose x ...` can easily be simulated by `x |> fn ...` thus eliminating all need for it
+
+* Haskell
+and :: Bool -> Bool -> Bool
+and Yes b = b
+and No  _ = No
+
+* Athenaeum
+and :: Bool -> Bool -> Bool
+and = fn
+    Yes b -> b
+    No  _ -> No
+
+* Old `choose` expression
+and :: Bool -> Bool -> Bool
+and = fn a b -> choose a, b
+    Yes, b => b
+    No,  _ => No
+
+
+* A collection is pattern-matched against tuple with n elements
+*     if it contains at least n - 1 elements
+* First n - 1 elements of the collection go into first n - 1 elements of the tuple
+*     with the last argument of the tuple being the rest of the collection
+* E.g. for `head <| array 1, 2, 3` the `head` binding is `1` and `_` is `array 2, 3`
+* To check for an empty array use `empty`
+* There is no builtin way to check for an exact number of elements,
+*     but you can check for n - 1 elements and then check that the last argument's is 1 and then take it
+head :: List a -> ?a
+head = fn
+	head, _ -> Some head
+	empty   -> None
+
+tail :: List a -> List a
+tail = fn
+	_, tail -> tail
+	x       -> x 
+
+popFront :: List a -> ?a * List a
+popFront = fn
+	head, tail -> (Some head), tail
+	x          -> None, x
+
+
+* REWORK vvv, because now `empty` is a binding and not a pattern
+* Is parsing unambiguous?
+* Yes, because of the distinction of first lowercase/uppercase letter
+fn
+    * Two args `some` and `text` or one of decomposition of `some text`?
+    * Two of `some` and `text` because both are lowercase
+    some text -> ...
+
+    * Two args `Some` and `text` or one of decomposition of `Some text`?
+    * One of `Some text` because wrapped in parentheses
+    (Some text) -> ...
+    
+    * Two args `Yes` and `text` or one of decomposition of `Yes text`?
+    * Two of `Yes text` because no parentheses
+    Yes text -> ...
+
+    * Rust's (a, B(c)) => ...
+    a (B c) -> ...
+
+    * Rust's (A(b, c), d) => ...
+    (A b, c) d -> ...

@@ -1,0 +1,6 @@
+* Macros are written like `macroname fnName = fnBody`
+* They are no different to ordinary functions except for the fact that they also take in
+*     statement's name as an argument and can introduce additional statements and/or cancel this out
+* `out`, `rec`, `feature` are all macros
+* It is important to note that macros do not take in token streams
+* They take in the function's body
