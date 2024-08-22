@@ -1,0 +1,50 @@
+in AA.FFI.C only *
+
+* Type of `puts` is const char * -> IO int
+* Every C function is assumed to be IO unless explicitly specified with `pure`
+puts = extern int (const char *)
+
+* `_...` allows for the same syntax for ellipsis functions
+printf = extern int (const char *, ...)
+
+* `void` to indicate zero args just like in C
+fflush = extern void (void)
+
+* Use `(void, ...)` to indicate that the function is ellipsis-only
+somefunc = extern void (void, ...)
+
+* `_(*)_` operator and `_[]` operators allow for the same syntax for function pointer
+sighandler_t = void (*)(struct siginfo_t)[]
+
+main : IO Unit
+main = discard <| puts <| cstr "Hello, world!"
+
+* Rust Bindgen example
+* C
+typedef struct CoolStruct {
+    int x;
+    int y;
+} CoolStruct;
+
+void cool_function(int i, char c, CoolStruct* cs);
+
+* Rust
+#[repr(C)]
+pub struct CoolStruct {
+    pub x: ::std::os::raw::c_int,
+    pub y: ::std::os::raw::c_int,
+}
+
+extern "C" {
+    pub fn cool_function(i: ::std::os::raw::c_int,
+                         c: ::std::os::raw::c_char,
+                         cs: *mut CoolStruct);
+}
+
+* Athenaeum
+CoolStruct = typedef struct CoolStruct
+    out .x : int
+    out .y : int
+
+cool_function = out extern void (int, char, CoolStruct *)
+

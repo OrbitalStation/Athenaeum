@@ -1,0 +1,60 @@
+* Class definition
+Show = fn a -> class
+    .show : a -> String *
+
+* Class instantiation
+* Implicit as Athenaeum utilizes duck typing
+show : Int -> String
+show = fn i -> i :to String
+
+* Class usage
+* `_=>_` operator on `Class` and `Type` produces a `Type`, so everything's alright during typecheck
+* When instantiated, `_=>_` searches for all instances of the class (not just for the current generics)
+*     in all the project modules using recursion
+* Searching happens in a duck-typed way: if there are all required instance members for a class then
+*     it is considered to be instanced
+* If found, every instance gets stored in a temporary list
+* If not found, compile time error "Instance not found" is triggered using `consteval`
+* `_=>_` also finds incomplete instances, i.e. if a specific instance does not have all requured members specified
+*     but has at least one, it is marked as `incomplete` and when used the error will not be "Instance not found",
+*     but "Instance is incomplete" with a short summary of missing members
+* `_=>_` then tries to merge all the instances for a class using `optoverload` (`overload` which returns error and does not panic)
+* This merge may fail if some instances overlap, i.e. are specified twice or differ only in return type (for functions)
+* If no fail occurs, aforementioned temporary list of instances is freed and merged members are then stored in a global internal static
+* It is important to note that this static is not compiler internal and is 100% not built-in
+* Functions accessed via `class <typeclass>` (e.g. `(class Show).show` in the case below) look up
+*     aforementioned static and if they find the instance they call it with the args provided,
+*     i.e. these functions are "middle-men" between generic code and actual types
+* That instance has to be around at that point, because it is added by `_=>_`
+* If a class function is used and there is no `_=>_` typechecking will fail
+* That is because class fns have types that check that `_=>_` is present and will trigger "Class bound not satisfied" if not
+showTwice : Show a => a -> String
+showTwice = fn a -> do
+    in class Show only *
+    show a ++ newline ++ show a
+
+* Instance usage
+main : IO Unit
+main = println "{showTwice (3 ^ 3)}"
+
+* `result` could be an associated type in Rust but it is generic in Athenaeum
+*     and yet still retains the main property of an assoc type - inability to parametrize over it in class instances,
+*     e.g. inability to have both `Add Int32 Int32 Int32` and `Add Int32 Int32 Int`
+* Why? because `class` internally uses `(opt)overload` and it does not accept overloading of only return type
+* Since `result` is used in the return position it can only be present once for a given set of input parameters,
+*     which essentially makes it associated
+Add = fn a b result -> class
+    .add : a -> b -> result *
+
+* Instances `Add Int Int Int` and `Add Float Float Float`
+add = overload [addIntInt addFloatFloat]
+
+addIntInt : Int -> Int -> Int
+addIntInt = fn a b -> a + b
+
+addFloatFloat : Float -> Float -> Float
+addFloatFloat = fn a b -> a + b
+
+_+_ : Add a b r => a -> b -> r
+_+_ = operator.left.80 class Add .add
+

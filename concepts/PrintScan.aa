@@ -1,0 +1,29 @@
+* `print` outputs a line to console
+* Similar to Rust's `print!`
+* `println` outputs a line to console plus a newline
+* Similar to Rust's `println!`
+* They both flush at newline
+
+* `scanch` reads a single Unicode character from the console
+* Similar to C's `getchar`
+* `scanln` reads a single line from the stdin and does not include the ending newline
+* Similar to Python's `input` and Rust's `std::io::stdin().get_line()`
+
+* Python
+x, y = map(int, input().split())
+print("Length of the vector is ", sqrt(x ** 2 + y ** 2))
+
+* Athenaeum
+main : IO !Unit
+main = do
+    * `into` means `try to convert to _ which may fail`
+    * `to` means `convert with no possibility of failure`
+    *
+    * `split` splits like Python's `split`, i.e. by whitespace
+    * `splitBy` splits by a pattern
+    * `splitBy "string"` splits by this string
+    * `splitBy (regex "[0-9]")` splits by any decimal digit
+    * `split` is shorthand for `splitBy (regex "\s")`
+    x, y = scanln? :split :map? { x :into Int } :into? Int * Int
+    println "Length of the vector is {sqrt (x ^^ 2 + y ^^ 2)}"
+

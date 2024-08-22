@@ -1,0 +1,7 @@
+* TODO
+
+* The `fdetach*` family of functions can detach a field from a type
+* The basic `fdetach` has type `String -> Type -> Type`
+* It detaches a field from a struct so that every time this field is access a given instead
+*     function is evaluated instead
+

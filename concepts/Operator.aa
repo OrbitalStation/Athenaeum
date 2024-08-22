@@ -16,10 +16,10 @@ operator infix left 10 _+_ = add
 *       `_op_`, i.e. if `op` is surrounded by `_`
 *       This is because binary operators of such form require different parsing rules depending on their precedence
 *       Example are `a + b * c` which would be parsed as `(a + b) * c` if there was no precedence
-*           and `a ^ b ^ c` which would be parsed as `(a ^ b) ^ c` if there was no associativity
+*           and `a ^^ b ^^ c` which would be parsed as `(a ^^ b) ^^ c` if there was no associativity
 *   2. *nothing* for the rest
 *       Yeah, it's not like they need any custom settings and so - nothing
-*       They are treated like atoms, so `(_)`, `+_`, `-_`, `?_`, `!_`, etc. all have the same precedence
+*       They are treated like atoms, so `(_)`, `+_`, `-_`, `_?`, `!_`, etc. all have the same precedence
 * You can reuse operator lexemes in other operators as long as it does not lead to multiple ways to parse
 * You cannot use the lexemes elsewhere, though (applies only to operators with words in them)
 * E.g. `_+_` and `+_` are fine but not `_[_]` and `[_]`
@@ -32,27 +32,26 @@ operator infix left 10 _+_ = add
 * The binary operator has the precedence, so unary variants are parsed only if binary one cannot
 
 * Automatically enforces lazy evaluation
-_and_ :: And a b => Lazy a -> Lazy b -> Output
-operator("left 10") _and_ = fn a b -> a :eval |> fn
-	No -> No
-	Yes -> b :eval
+_and_ : And a b => Lazy a -> Lazy b -> Output
+operator infix left 10 _and_ = fn a b -> match (a pass) do
+	No  => No
+	Yes => b pass
 
 * `_and_`, `_or_` and `not_` operators
 * Why not use `&&`, `||` and `!`?
 * Because that's ugly and also `!` is used to denote `Result` type
 
-* To denote bitwise operations there are `_&_`, `_|_`, `_^_`, `_<<_`, `_>>_`, `~_`
-* As well as their assignment counterparts: `_:&=_`, `_:|=_`, `_:^=_`, `_:<<=_`, `_:>>=_`
+* To denote bitwise operations there are `_&_`, `_|_`, `_^^_`, `_<<_`, `_>>_`, `~_`
+* As well as their assignment counterparts: `_:&=_`, `_:|=_`, `_:^^=_`, `_:<<=_`, `_:>>=_`
+* Bitwise xor is denoted by `_^^_`. not by `_^_` as this operator is used for exponentiation
 * Every one of these is available via `AA.Bitwise` imported by default
 * They are defined by `AA.Bitwise.Operators` module and their implementation resides
 *     in `AA.Bitwise.Gates` and `AA.Bitwise.Shifts` modules in function form (`and`, `xor`, `shl`, etc.) along with other gates (`nand`, `nor`, etc.)
 
-* As much as I'd like to have `^` denote exponentiation, the symbol has already been taken by xor
-* To not have `_^_` mean different operators in the "standard" library exponentiation is `**`
-* So `_**_` and `_:**=_`
-
+* `_^_` denotes exponentiation (no ugly `_**_`)
+* Assignment via `_:^=_`
+*
 * `return_` operator
-
 * `if_then_` + `_else_` pair of operators
 * `_else_` has lower precedence than `if_then_`
 if (isAuthor and isRecent) or isAdmin then ...
@@ -74,19 +73,19 @@ else
 	iii jjj
 
 * Above is equivalent to:
-ifFn (fn -> aaa bbb) thenFn
-	(fn -> ccc ddd)
-elseFn <| fn -> ifFn (fn -> eee fff) thenFn
-	(fn -> ggg hhh)
+ifFn { aaa bbb } thenFn
+	{ ccc ddd }
+elseFn <| fn _ -> ifFn { eee fff } thenFn
+	{ ggg hhh }
 elseFn
-	(fn -> iii jjj)
+	{ iii jjj }
 
-* All these `fn ->` are required because of the eager nature of the language, i.e.
+* All these `{ ... }` and `fn _ ->` are required because of the eager nature of the language, i.e.
 *	they are used to simulate laziness
 
-while (fn -> aaa bbb) do
+while { aaa bbb } do
 	ccc
 
-for (obtain iterator) fn it -> do
+for (obtain iterable) fn it -> do
 	aaa
 

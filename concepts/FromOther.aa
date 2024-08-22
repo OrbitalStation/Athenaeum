@@ -14,11 +14,11 @@ fn num_iters(cx: f64, cy: f64, max_iters: u32) -> u32 {
 }
 
 * Athenaeum
-numIters :: Float64 -> Float64 -> Uint32 -> Uint32
-numIters = fn cx cy maxIters -> early stateful do
-    val z = state <| new Complex 0 0
-    val c = new Complex cx cy
-    for 0..maxIters fn i ->
+numIters : Float64 -> Float64 -> Uint32 -> Uint32
+numIters = fn cx cy maxIters -> do
+    z = state <| new Complex 0 0
+    c = new Complex cx cy
+    for 0..maxIters fn i -> do
         if z :norm > 2 then return i
         z := z * z + c
     return Ok maxIters
@@ -52,16 +52,14 @@ fn hex2rgb(hex: &str) -> Result <Vec <u8>, String> {
 *           on functions, which is bad because functions cannot be primary objects in such a system
 RGB = Array Uint8 3
 
-hex2rgb :: String -> !RGB
-hex2rgb = fn hex -> early do
-    val hex = hex :?stripPrefix "#"
-    if hex :len != 6 then return err <| error "Invalid HEX color length"
-    val r = hex[1..2] :parseWithRadix Uint8 16 :?mapErr fn -> badFormat
-    val g = hex[3..4] :parseWithRadix Uint8 16 :?mapErr fn -> badFormat
-    val b = hex[5..6] :parseWithRadix Uint8 16 :?mapErr fn -> badFormat
-    return Ok (array r, g, b)
-where
-    badFormat = error "Invalid HEX color"
+hex2rgb : String -> !RGB
+hex2rgb = fn hex -> do
+    hex = hex :stripPrefix? "#"
+    if hex :len != 6 then return Err "Invalid HEX color length"
+    r = hex[1..2] :parseWithRadix Uint8 16 :err? { "Invalid HEX color" }
+    g = hex[3..4] :parseWithRadix Uint8 16 :err? { "Invalid HEX color" }
+    b = hex[5..6] :parseWithRadix Uint8 16 :err? { "Invalid HEX color" }
+    return Ok [r g b]
 
 * Rust
 fn lerp_color(color1: &[u8; 3], color2: &[u8; 3], value: f64) -> [u8; 3] {
@@ -73,11 +71,12 @@ fn lerp_color(color1: &[u8; 3], color2: &[u8; 3], value: f64) -> [u8; 3] {
 }
 
 * Athenaeum
-lerpColor :: RGB -> RGB -> Float64 -> RGB
-lerpColor = fn x y value -> array
-    x[1] :into Float64 + (y[1] :into Float64 - x[1] :into Float64) * value :into Uint8,
-    x[2] :into Float64 + (y[2] :into Float64 - x[2] :into Float64) * value :into Uint8,
-    x[3] :into Float64 + (y[3] :into Float64 - x[3] :into Float64) * value :into Uint8,
+lerpColor : RGB -> RGB -> Float64 -> RGB
+lerpColor = fn x y value -> [
+    x[1] :to Float64 + (y[1] :to Float64 - x[1] :to Float64) * value :to Uint8
+    x[2] :to Float64 + (y[2] :to Float64 - x[2] :to Float64) * value :to Uint8
+    x[3] :to Float64 + (y[3] :to Float64 - x[3] :to Float64) * value :to Uint8
+]
     
 
 * Rust
@@ -104,17 +103,17 @@ fn get_gradient(gradient_colors: Vec<&str>, max_iters: u32) -> Vec<[u8; 3]> {
 }
 
 * Athenaeum
-getGradient :: List String -> Uint32 -> !List RGB
-getGradient = fn gradientColors maxIters -> stateful do
-    val colors = state <| list empty
-    val gradientColorsRGB = state <| list empty
+getGradient : List String -> Uint32 -> IO List RGB
+getGradient = fn gradientColors maxIters -> do
+    colors = state <| list []
+    gradientColorsRGB = state <| list []
     for gradientColors fn color -> do
-        val rgb = ?hex2rgb color
-        gradientColorsRGB := gradientColorsRGB :push (array rgb[1], rgb[2], rgb[3])
+        rgb = hex2rgb color :unwrap
+        gradientColorsRGB := gradientColorsRGB :push [rgb[1] rgb[2] rgb[3]]
     for 0..<maxIters fn i -> do
-        val colorIndex = (i * (gradientColors :len - 1) :into Usize) / maxIters :into USize
-        val colorValue = (i :into Float64 * (gradientColors :len :into Float64 - 1.0)) / (maxIters :into Float64)
-        val value = colorValue % 1.0
+        colorIndex = (i * (gradientColors :len - 1) :to Usize) / maxIters :to Usize
+        colorValue = (i :to Float64 * (gradientColors :len :to Float64 - 1.0)) / (maxIters :to Float64)
+        value = colorValue mod 1.0
         colors := colors :push <| lerpColor
             gradientColorsRGB[colorIndex + 1]
             gradientColorsRGB[colorIndex + 2]
@@ -142,21 +141,21 @@ async fn main() -> Result<(), EchoError> {
 }
 
 * Athenaeum
-main :: F_IO !Unit
-Tokio.main out main = async do
-    val state = new State 0
+main : IO !Unit
+main = Tokio.main async do
+    actorState = new State 0
 
-    val echoRef = new ActorRef "echo" (new Echo) state 100_000 :?await
+    echoRef = new ActorRef "echo" (new Echo) actorState 100_000 :await?
 
     println "Sent Ping"
-    echoRef :send Message.Ping :?await
+    echoRef :send Message.Ping :await?
 
     println "Sent Ping and ask response"
-    val pong = echoRef :ask Message.Ping :?await
+    pong = echoRef :ask Message.Ping :await?
     println "Got {debug pong}"
 
-    val _ := echoRef :stop :?await
-    return Ok empty
+    _ = echoRef :stop :await?
+    return Ok pass
 
 * Python
 async def create_taiga_issue(update: Update, data: dict) -> dict:
@@ -196,55 +195,52 @@ async def create_taiga_issue(update: Update, data: dict) -> dict:
     return issue
 
 * Athenaeum
-createTaigaIssue :: Update -> Dict -> ?Dict
+createTaigaIssue : Update -> Dict -> Dict?
 createTaigaIssue = async fn update data -> do
-    val message = update :effectiveMessage
-    val profile = data["profile"]
-    val clientInfo = do
-        val name = profile :get "name" :or "ИМЯ"
-        val age  = profile :get "age"  :or "ВОЗРАСТ"
+    message = update :effectiveMessage
+    profile = data["profile"]
+    clientInfo = do
+        name = profile :get "name" :or { "ИМЯ" }
+        age  = profile :get "age"  :or { "ВОЗРАСТ" }
 
-        val messengerLink = profile :get "messengerLink" :or "У пользователя нет username"
+        messengerLink = profile :get "messengerLink" :or { "У пользователя нет username" }
 
-        val dialogUrl = Config.FRONT_URL ++ Config.ENDPOINT_CONVERSATIONS
-        val clientId  = profile :get "clientId" :or ""
+        dialogUrl = Config.FRONT_URL ++ Config.ENDPOINT_CONVERSATIONS
+        clientId  = profile :get "clientId" :or { "" }
 
-        return "
+        breakdo "
             **Пользователь**: {name} {age}
             **Ссылка на телеграм**: {messengerLink}
             **Ссылка на диалог**: {dialogUrl}?clientId={clientId}
             "
 
-    val date = AA.DateTime.now
+    date = AA.DateTime.now
         :asTimeZone Config.LOCAL_TIME_ZONE
         :date
-        :strFTime "%d-%m-%y"
+        :strftime "%d-%m-%y"
 
-    val messageText, messageShort = message :textHtmlUrled |> fn
-        None -> "", ""
-        Some text -> pure do
-            val messageText = newline ++ htmlToMd text
-            val messageShort =
-                if message.text :len > 200 then
-                    message.text[..<200] ++ "..."
-                else
-                    message.text
-            val messageShort = ": " ++ (messageShort :replace newline :with " ")
+    messageText, messageShort = match (message :textHtmlUrled) do
+        None => "", ""
+        Some => fn text -> do
+            messageText = newline ++ htmlToMd text
+            messageShort = if message.text :len > 200 then
+                message.text[..<200] ++ "..."
+            else
+                message.text
+            messageShort = ": " ++ (messageShort :replace newline :with " ")
             return messageText, messageShort
-    val mediaText =
-        if message.audio :isSome or message.document :isSome or message.animation :isSome or message.video :isSome or message.voice :isSome then
-            "{newline}<Вложение см. в диалоге>"
-        else
-            ""
+    mediaText = if message.audio :isSome or message.document :isSome or message.animation :isSome or message.video :isSome or message.voice :isSome then
+        "{newline}<Вложение см. в диалоге>"
+    else
+        ""
 
-    val subject = "Заявка в поддержку от {date}{messageShort}"
-    val description = clientInfo ++ messageText ++ mediaText ++ newline
+    subject = "Заявка в поддержку от {date}{messageShort}"
+    description = clientInfo ++ messageText ++ mediaText ++ newline
 
-    val issue = Taiga.createIssue subject description
-        :inspectErr fn e -> ?Log.error "Failed creation of issue in Taiga: {e}"
+    issue = Taiga.createIssue subject description
+        :inspectErr { log :error "Failed creation of issue in Taiga: {x}" }
 
-    return issue :map fn issue ->
-    		issue |> with .issueNo "{date}_{issue['issueId']}"
+    return issue :map { x with .issueNo "{date}_{issue['issueId']}" }
 
 
 * Crystal
@@ -271,14 +267,14 @@ end
 * Athenaeum
 MAX = 100
 
-main :: F_IO Unit
-out main = do
-    val sieve = state <| array Yes :repeat (MAX + 1)
+main : IO Unit
+main = do
+    sieve = state <| [Yes] :repeat (MAX + 1)
     sieve[1] := No
     sieve[2] := No
-    for 3..√MAX fn i -> do
+    for 3..sqrt MAX fn i -> do
         if sieve[i] then
-            for (i * i..MAX :stepBy i) fn j -> do
+            for ((i * i)..MAX :stepBy i) fn j -> do
                 sieve[j] := No
 	
     for (sieve :iter :enumerate) fn prime, number -> do
@@ -305,16 +301,16 @@ async def notify_psych(client_profile: dict, psych_chat_id: str):
 notifyPsych = async fn clientProfile psychChatId -> do
 	log :debug "NOTIFY PSY {psychChatId}{clientProfile}"
     
-    val message = "
-    		<b>❣️📩 Вам написал пользователь 📩❣️</b> {clientProfile :get 'name' :or 'ИМЯ'}{clientProfile :get 'age' :or 'ВОЗРАСТ'}
-        {config.FRONT_URL}{config.ENDPOINT_CONVERSATIONS}?clientId={clientProfile :get 'clientId' :or ''}
-        "
+    message = "
+    		<b>❣️📩 Вам написал пользователь 📩❣️</b> {clientProfile :get 'name' :or { 'ИМЯ' } }{clientProfile :get 'age' :or { 'ВОЗРАСТ'} }
+    		{config.FRONT_URL}{config.ENDPOINT_CONVERSATIONS}?clientId={clientProfile :get 'clientId' :or { '' } }
+    		"
 
     bot :sendMessage
-        |> with .text                  message
-        |> with .chatId                psychChatId
-        |> with .parseMode             ParseMode.HTML
-        |> with .disableWebPagePreview Yes
+        with .text                  message
+        with .chatId                psychChatId
+        with .parseMode             ParseMode.HTML
+        with .disableWebPagePreview Yes
         :build
         :await
 
@@ -328,11 +324,11 @@ fn main() {
         println!("> {}", word);
     }
 
-    let mut chars = pangram.chars().collect::<Vec <_>>();
+    let mut chars = pangram.chars().collect:<Vec <_>>();
     chars.sort();
     chars.dedup();
 
-    let mut string = String::new();
+    let mut string = String:new();
     for c in chars {
         string.push(c);
         string.push_str(", ");
@@ -342,7 +338,7 @@ fn main() {
     let trimmed_str = string.trim_matches(chars_to_trim);
     println!("Used characters: {}", trimmed_str);
 
-    let alice = String::from("I like dogs");
+    let alice = String:from("I like dogs");
     let bob = alice.replace("dog", "cat");
 
     println!("Alice says: {}", alice);
@@ -350,29 +346,28 @@ fn main() {
 }
 
 * Athenaeum
-main :: F_IO Unit
+main : IO Unit
 main = do
-	val pangram = "the quick brown fox jumps over the lazy dog"
+	pangram = "the quick brown fox jumps over the lazy dog"
 	println "Pangram: {pangram}"
 	
 	println "Words in reverse"
-	for (pangram :splitw :reverse) fn word -> do
+	for (pangram :split :reverse) fn word -> do
 		println "> {word}"
 	
-	val chars = state <| pangram :iter :collect List
-	chars := quicksort chars :ascending
-	chars := chars :deDuplicate
+	chars = state <| pangram :iter :to List
+	chars := chars :sortAsc :deDuplicate
 	
-	val string = state <| str ""
+	string = state <| str ""
 	for chars fn ch -> do
 		string :++= "{ch}, "
 	
-	val charsToTrim = " ,"
-	val trimmedStr = string :stripByAnyOf charsToTrim
+	charsToTrim = " ,"
+	trimmedStr = string :stripByAnyOf charsToTrim
 	println "Used characters: {trimmedStr}"
 	
-	val alice = str "I like dogs"
-	val bob = alice :replace "dog" :with "cat"
+	alice = "I like dogs"
+	bob = alice :replace "dog" :with "cat"
 	
 	println "Alice says: {alice}"
 	println "Bob says: {bob}"
@@ -387,7 +382,7 @@ type Vec = { x : Float, y : Float, name : Option String }
 
 let result =
     let input = r#"{ "x": 123, "y": 456.78, "name": null }"#
-    do v = de.deserialize input
+   do v = de.deserialize input
     let v : Vec = v
     let updated = { x = v.x, y = v.y, name = Some "Vector" }
     ser.to_string_pretty updated
@@ -399,18 +394,18 @@ match result with
 * Athenaeum
 in AA.SerdeJson only Json
 
-Vec = type
-	.x    :: Float32 *
-	.y    :: Float32 *
-	.name :: ?String *
+Vec =
+	.x    : Float32 *
+	.y    : Float32 *
+	.name : String? *
 
-main :: F_IO !Unit
-out main = do
-	val result = ?do
-		val input = '{ "x": 123, "y": 456.78, "name": null }'
-		val v = input |> ?deserialize Json :to Vec
-		val updated = new Vec v.x v.y (Some "Vector")
-		break updated |> ?serialize Json
+main : IO !Unit
+main = do
+	result = identity? do
+		input = '{ "x": 123, "y": 456.78, "name": null }'
+		v = input |> deserialize? Json :to Vec
+		updated = new Vec v.x v.y (Some "Vector")
+		breakdo updated |> serialize? Json
 	println "{result}"
 
 * Elm
@@ -435,7 +430,7 @@ main =
 * Athenaeum
 in AA.Html.Tags *
 
-main :: Html
+main : Html
 main = html do
 	div do
 		h1 do text "My Grocery List"
@@ -449,4 +444,170 @@ main = html do
 		    li do text "Cumin"
 		    li do text "Chili Powder"
 		    li do text "Quinoa"
+
+* Haskell
+data LoginError
+  = InvalidEmail
+  | NoSuchUser
+  | WrongPassword
+  deriving (Show)
+
+getDomain :: Text -> Either LoginError Text
+getDomain email =
+  case T.splitOn "@" email of
+    [_, domain] -> Right domain
+    _           -> Left InvalidEmail
+
+getToken :: IO (Either LoginError Text)
+getToken = do
+  T.putStrLn "Enter email address:"
+  email <- T.getLine
+  pure $ getDomain email
+
+users :: Map Text Text
+users = Map.fromList
+  [ ("example.com", "qwerty123")
+  , ("localhost", "password")
+  ]
+
+userLogin :: IO (Either LoginError Text)
+userLogin = do
+  token <- getToken
+  case token of
+    Right domain ->
+      case Map.lookup domain users of
+        Just password -> do
+          T.putStrLn "Enter password:"
+          pw <- T.getLine
+          if pw == password then
+            pure $ Right domain
+          else
+            pure $ Left WrongPassword
+        Nothing ->
+          pure $ Left NoSuchUser
+    left    ->
+      pure $ left
+
+* Athenaeum
+LoginError =
+    .InvalidEmail  : Unit +
+    .NoSuchUser    : Unit +
+    .WrongPassword : Unit +
+in variants LoginError only *
+
+getDomain : Text -> !Text
+getDomain = fn email -> email :splitBy "@" :into (String * String) :map { x[2] }
+    :err { InvalidEmail }
+
+getToken : IO !Text
+getToken = do
+    println "Enter email address:"
+    email = scanln?
+    return getDomain email
+
+users : Dictionary Text Text
+users = dictionary [
+	"example.com", "qwerty123"
+	"localhost", "password"
+]
+
+userLogin : IO !Text
+userLogin = do
+	domain = getToken?
+	password = users :lookup domain :err? { NoSuchUser }
+	println "Enter password:"
+	pw = scanln?
+	return if pw == password then
+		Ok domain
+	else
+		Err WrongPassword
+
+main : IO Unit
+main = println "Hello, world!"
+
+* Rust
+use std::str::FromStr;
+
+fn get_count_item(s: &str) -> (u64, &str) {
+    let mut it = s.split(' ');
+    let (Some(count_str), Some(item)) = (it.next(), it.next()) else {
+        panic!("Can't segment count item pair: '{s}'");
+    };
+    let Ok(count) = u64::from_str(count_str) else {
+        panic!("Can't parse integer: '{count_str}'");
+    };
+    (count, item)
+}
+
+fn main() {
+    assert_eq!(get_count_item("3 chairs"), (3, "chairs"));
+}
+
+* Athenaeum
+getCountItem : String -> IO Uint64 * Str
+getCountItem = fn s -> do
+	countStr, item = s :splitBy ' ' :into (String * String) :or { panic "Can't segment count item pair: '{s}'" }
+	count = countStr :into Uint64 :or { panic "Can't parse integer: '{countStr}'" }
+	return count, item
+
+main : IO Unit
+main = do
+	assert getCountItem "3 chairs" :unwrap == (3, "chairs")
+
+* Flix
+enum Shape {
+    case Circle(Int),        // has circle radius
+    case Square(Int),        // has side length
+    case Rectangle(Int, Int) // has height and width
+}
+
+def area(s: Shape): Int = match s {
+    case Circle(r)       => 3 * (r * r)
+    case Square(w)       => w * w
+    case Rectangle(h, w) => h * w
+}
+
+def map(f: a -> b, l: List[a]): List[b] = match l {
+    case Nil     => Nil
+    case x :: xs => f(x) :: map(f, xs)
+}
+
+* Athenaeum
+Shape =
+    * Has circle radius
+    .Circle : Int          +
+    * Has side length
+    .Square : Int          +
+    * Has height and width
+    .Rectangle : Int * Int +
+in variants Shape only *
+
+area : Shape -> Int
+area = fn s -> match s do
+    Circle    => fn r    -> 3 * (r * r)
+    Square    => fn w    -> w * w
+    Rectangle => fn h, w -> h * w
+
+map : (a -> b) -> List a -> List b
+map = fn f l -> match (l :isEmpty) do
+    Yes => []
+    No  => [f (l :atUnchecked 1)] ++ map f l[1..]
+
+* Go
+func Backwards[E any](s []E) func(func(int, E) bool) {
+    return func(yield func(int, E) bool) {
+        for i := len(s) - 1; i >= 0; i-- {
+            if !yield(i, s[i]) {
+                return
+            }
+        }
+    }
+}
+
+* Athenaeum
+Backwards : Slice e -> (Int32 -> e -> m Bool) -> m Unit
+Backwards = fn s yield -> do
+    loopwith (s :len) { x >= 1 } { x - 1 } fn i -> do
+        if not yield i s[i] then
+            return
 

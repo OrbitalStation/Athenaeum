@@ -1,9 +1,9 @@
 Tup = fn a b -> type
-    .data :: a *
-    .next :: b *
+    .data : a *
+    .next : b *
 
 class Tuple (Y.Append t) => Tuple a
-    Append ty :: Type
+    Append ty : Type
 
 instance Tuple ()
 

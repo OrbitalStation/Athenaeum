@@ -1,0 +1,52 @@
+* if-then-else
+* `if_then_` and `_else_` operators
+if condition then expr1 else expr2
+
+* If can be used without the else branch in `do` blocks
+if condition then expr
+
+if 2 + 2 == 4 then do
+    println "Math checks out"
+else do
+    println "What?"
+
+* while loop
+* `condition` is of type `Unit -> IO Bool`
+* `block` is of type `IO Unit`
+* while condition block -- repeatedly calls `block` while `condition` is true
+
+i = state 0
+while { i < 10 } do
+    println "hi"
+    i :+= 1
+
+* do-while loop
+* As for `while`, but evaluates the body first and only then checks the condition
+doWhile { No } do
+    println "Change `doWhile` to `while` and this line will never be printed"
+
+* for loop
+* for iterable itfn -- iterates through `iterable` calling `itfn` on each element
+for 1..10 fn i -> do
+    println "hi"
+
+* Kinda like C's `for` loop, iterates with a bound variable modified on each iteration
+* `initial` is of type `a`. It is later passed to `condition`, `oniter` and `body`
+* `condition` is of type `a -> IO Bool`. Evaluated before each iteration and return value of `No` stops it
+* `onIter` is of type `a -> IO a`. Modifies loop variable after iteration step is finished
+* `body` is of type `a -> IO Unit`. Body of the loop
+* loopwith initial condition onIter body --
+loopwith 0 { x < 10 } { x :+= 1 } fn i -> do
+    println "hi"
+
+* Infinite loop, analogous to `while Yes do ...`
+infiniteloop do
+    println "hi"
+
+* `break` has type of `AA.Break.Break`
+
+for users fn user -> do
+    if user.name == "Mark" then do
+        println "Mark is among us!"
+        break
+

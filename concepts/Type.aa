@@ -1,21 +1,59 @@
-* `?Type` == `Option Type`
-* `!Type` == `Result Type Anyhow.Error`
-* `Type * Type` == Rust's `(Type, Type)`
-* `Type -> Type` == Rust's `Fn(Type) -> Type`
-* `MonadicType + MonadicType` == Combined monads
+* `a?` where a : Type == `Option a`
+* `!a` where a : Type == `Result a <set of all errors that could possibly be here>`
+* `a + b` where a b : Type == Sum type with unnamed variants
+* `a * b` where a b : Type == Product type with unnamed fields, Rust's `(Type, Type)`
+* `a -> b` where a b : Type == Rust's `Fn(Type) -> Type`
 
-* `a.b` is the same as `(a "b")`
-* `.b` is the same as `"b"`
+* `a.b` where `a` and `b` are valid Athenaeum identifiers is the same as `(a "b")``
+* `{whitespace}.a` is the same as "a"
 
-Tup = fn a b -> type
-    .data :: a *
-    .next :: b *
+* `_:_` operator creates a `TypedPair`
 
-Option = fn a -> type
-    .Some :: a +
-    .None      +
+Tup = fn a b ->
+    .data : a *
+    .next : b *
 
-Foo = type
-	.id      :: Int32  *
-	.fooName :: String *
+* Unnamed variant
+* Corresponds to `a * b` in type theory
+* Type annotation is needed to forbid using `Tup` as a multiplication fn
+Tup : Type -> Type -> Type
+Tup = fn a b -> a * b
+
+Option = fn a ->
+    .None : Unit +
+    .Some : a    +
+
+* `variants` provides constructors for the sum type with variants' names
+in variants Option only None Some
+
+None : Option a
+Some : a -> Option a
+
+fgh : Type -> List String
+fgh = fn a -> do
+    node = consteval AA.Reflect.getDefinitionNodeOf a
+
+getDefinitionNodeOf : a -> IO AANode
+
+* Unnamed variant
+* Corresponds to `1 + x` in type theory
+Option = { Unit + x }
+
+Bool =
+    .No  : Unit +
+    .Yes : Unit +
+
+* `TYpeCONVeniences` provide `Variants`, `is*`, `as*` and a whole lot of other convenience functions
+in tyconv Bool only *
+
+* Unnamed variant
+* Corresponds to `1 + 1` in type theory
+Bool = Unit + Unit
+
+Foo =
+	.id      : Int32  *
+	.fooName : String *
+
+* Unnamed variant
+Foo = Int32 * String
 

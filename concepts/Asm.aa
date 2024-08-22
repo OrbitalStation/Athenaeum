@@ -4,28 +4,27 @@ in AA.Asm *
 * global pow
 * pow:
 * .start:
-*     mov  ebx, eax
+*     mov   ebx, eax
 * .loop:
-*     cmp  ecx, 1
+*     cmp   ecx, 1
 *     je   .endLoop
-*     imul eax, ebx
-*     dec  ecx
+*     imul  eax, ebx
+*     dec   ecx
 *     jmp  .loop
 * .endLoop:
 *     ret
 
-* `where` clauses are visible in type annotation
-* `branch .start` is just another way to write `branch.start` or `branch "start"`
 * `do` is needed to introduce indentation
-pow :: In eax -> In ecx -> Out eax + Change eax, ebx, ecx
-pow = asm do
+pow : In eax -> In ecx -> Out eax + Change eax, ebx, ecx
+pow = out asm do
     branch .start do
-        mov  ebx eax
+        mov   ebx eax
     branch .loop do
-        cmp  ecx 1
+        cmp   ecx 1
         je   .endLoop
-        imul eax ebx
-        dec  ecx
+        imul  eax ebx
+        dec   ecx
         jmp  .loop
     branch .endLoop do
         ret
+

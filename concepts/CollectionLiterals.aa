@@ -4,6 +4,7 @@
 
 * Tuple
 * `_,_` operator
+* `_,_` has lower priority than fn application and `a :b`
 a, b
 a, b, c
 
@@ -19,39 +20,59 @@ a, b, c
 * `_,` operator used on a non-tuple converts it to a one element tuple
 a,
 
-* Empty tuple (of type `Unit`)
-* Why `empty` and not `unit`?
-* That way constructions like `array empty` and `vec empty` look nice
-* Other than that, manual creation of Unit type is pretty rare, so it's fine
-empty
+* unit tuple (of type `Unit`)
+* Named `pass` so that in pattern matching you would use `... => pass` instead of `... => unit`
+pass
 
 * Array
-array a, b, c
+* Single-line (separated by space) - builtin syntax
+* Differs from indexing by a required space before the `[`
+[a b c]
+[(a + b) (a - b) (a * b)]
+* Multi-line (separated by newlines)
+[
+	a
+	b
+	c
+]
+[
+	a + b
+	a - b
+	a * b
+]
+
+
+* ARRAYS as above (determined by space)
+* ALLOW do to have continuation on the same line if it is part of operator
+* `_,_` has lower priority than `a :b`
 
 * Array of tuples
-array (1, 2), (3, 4)
+[(1, 2) (3, 4)]
 
 * List
 * Rust's `Vec`
-list a, b, c
+list [a b c]
 
 * Dictionary
-* `_⟜_` operator creates a key-value pair
-* Notice the trailing comma - made possible by the `_,` operator
-dictionary
-	"abc" ⟜ 123,
-	"def" ⟜ 456,
+* It could have been almost 1-to-1 translation from JSON and python formats by
+*     (ab)using `{ ... }` lambda expressions and `_:_` operator
+* But I decided not to, because it is inconsistent with the rest of the collection literals
+*     plus `_:_` should be used only for type definition
+dictionary [
+	"abc", 123
+	"def", 456
+]
 
 * Mathematical vector type
-vec 0.0, 0.0
+vec [0.0 0.0]
 
 * `:row` or `:column` to specify how to multiply with matrix
-(vec 1, 0 :row) * (AA.Matrix.identity Int32 2×2)
+(vec [1 0] :row) * (AA.Matrix.id Int32 2×2)
 
 * Matrix
-* `_×_` operator creates a `Dimensions` type
-* `_×_` defined in `AA.Dimensions`
-matrix 3×3
-	1, 2, 3,
-	4, 5, 6,
-	7, 8, 9,
+matrix [
+    [1 2 3]
+    [4 5 6]
+    [7 8 9]
+]
+

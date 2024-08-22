@@ -1,0 +1,26 @@
+* The `IO` monad is similar to Haskell's `IO`
+* It is annotated with `implicitlift` which makes it so that when value of `IO a` is used
+*     it is first tried to be converted to `a` and only if that conversion fails (e.g. `IO a` specifically is expected)
+*     `IO a` is used
+* Conversion happens implicitly and reorders the code (see the example below)
+* Example:
+* scanInt32 = scanln? :into? Int32
+* sumOfTwo = scanInt32? + scanInt32?
+* This is unfolded to something like this (if we ignore `?`s):
+* scanInt32 = scanln? >>= fn _0 -> pure (_0 :into? Int32)
+* sumOfTwo = scanInt32? >>= fn _0 -> scanInt32? >>= fn _1 -> pure (_0 + _1)
+
+
+
+* `IO_` is also an operator and the actual monad is `AA.IO.F_IO`
+* This is so one could write `IO List Int` instead of `IO (List Int)
+
+* Why not separate `F_Panic`, `F_Mem`, `F_Div`, etc. and the combination of them - `IO`?
+* Because that would make people create tons of useless `F_Something`
+* It does not make any real benefit besides hinting about what a function does, but that's
+*     not really helpful either.
+* Plus it would make people constantly choose between general `IO` or manually specifying
+*     each and every effect
+
+
+

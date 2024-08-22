@@ -1,0 +1,38 @@
+* Support different types for ptr size (like C's intptr_t)
+* Maybe not have ptrdiff_t because disallow pointer arithmetic
+* Support multiple address spaces with all pointers defaulting to 0-space
+* The above support must be tracked at compile time
+* Provenance and other bullshit also tracked in-program
+* Make conversions between pointers and integers very closely-looked at
+
+* Maybe make it so that the general `Ptr` type has a lot of compile-time only fields
+*     such as "am I initialized", "which address space am I in", "am I aligned", "am I readonly", etc.
+* Such things could probably be done with sth like `Ptr = fn args -> typeDef` since that would require args
+*     to be known during compile time and *only* compile time since they will not be stored in the struct itself
+* Different functions manipulating those `Ptr` may require different properties and may return pointers
+*     with altered properties, e.g. dereferencing requiring a valid pointer and `free` returning a non-valid pointer
+
+* Look at this article (https://faultlore.com/blah/fix-rust-pointers/)
+
+* Hypothetical example of part of `Ptr` definition
+Ptr : Bool -> Usize -> ?Type -> Type
+Ptr = fn isReadonly addrSpace optionalPointee ->
+    <type def>
+
+ValidPtr : Bool -> Usize -> Type -> Type
+ValidPtr = fn isReadonly addrSpace pointee -> Ptr isReadonly addrSpace (Some pointee)
+
+ValidPtr0 : Bool -> Type -> Type
+ValidPtr0 = fn isReadonly pointee -> ValidPtr isReadonly 0 pointee
+
+ConstPtr : Type -> Type
+ConstPtr = fn pointee -> ValidPtr0 Yes pointee
+
+MutablePtr : Type -> Type
+MutablePtr = fn pointee -> ValidPtr0 No pointee
+
+tagPointer : ValidPtr readonly addrspace pointee -> UintOfBits 1 -> Ptr readonly addrspace None
+tagPointer = fn ptr tag -> do
+    assert alignof anno.pointee > 1, "Cannot tag lower bit of `{anno.pointee}` for it is significant"
+    return ptr :to Uintptr :setnthbit tag :to _
+

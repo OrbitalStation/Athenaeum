@@ -1,0 +1,67 @@
+* String type
+String
+
+* Strings are interned by default, so a `String` is merely a pointer to an actual string value and thus
+*     only `sizeof Index` bytes long, which is typically 4 or 8
+* A GenString points to a continuous memory that consists of:
+*     - A header, which consists of:
+*         1. A string length of Index (optional)
+*            Not present e.g. for C strings which are null-terminated
+*            Can also be stored in the main object of type `GenString`
+*            If further detaching is needed use `fdetach` function provided in `AA.FDetach`
+*         2. A string capacity (optional)
+*            Not present e.g. for C strings and NoCapString
+*            Can also be stored in the main object of type `GenString`
+*            If further detaching is needed use `fdetach` function provided in `AA.FDetach`
+*         If none of the above are present, the header is empty
+*     - The string data stored in one of the below encodings
+*         1. UTF-8
+*            Full unicode support in ASCII-compatible way (like in Rust's String)
+*         1.1 A null-terminated UTF-8 with no length member of the string anywhere
+*            Used for C compatibility
+*         2. ASCII
+*            An ASCII-only string. A UTF-8 string may emulate it, but this encoding allows for random O(1)
+*                access of any character within the string, unlike O(n) of UTF-8 because it requires traversal
+*         2.1 A null-terminated ASCII with no length member of the string anywhere
+*            Used for C compatibility
+*         3+. Probably something else. I guess it is possible to create a custom encoding provider
+*                so that users can extend the GenString class without the need to create their own
+* `Index` is a type commonly used to access collections. It is analogous to `Usize` type
+
+* Hypothetical implementation of GenString and others
+
+DynamicComponentStorage =
+    .StoredInAllocatedMem   : Unit +
+    .StoredInObjectInstance : Unit +
+in variants DynamicComponentStorage only *
+
+LenComponent =
+    .DCS            : DynamicComponentStorage +
+    .NullTerminated : Unit                    +
+in variants LenComponent only (DCS as LenDCS) NullTerminated
+
+CapComponent =
+    .DCS          : DynamicComponentStorage +
+    .ReserveExact : Unit                    +
+in variants CapComponent only (DCS as CapDCS) ReserveExact
+
+Encoding = fn isNullTerminated self -> class
+    ...
+
+* `tywithname` provides the type with a mean to refer to an unnamed part of it
+* It utilizes reflection and looks for a thing annotated as `<ty> namedty .<name>` for any given arg
+*     named `<name>` it is requested with
+* `_namedty_` operator simply discards the second name operator and passes on a type
+* The info about the name is retrieved via reflection by `tywithname`
+aaa : tywithname fn a ->
+    Ty namedty .a -> a -> Unit
+
+GenString : tywithname fn len ->
+    Encoding (len :isNullTerminated) e =>
+    LenComponent namedty .len -> CapComponent -> e -> Bool -> Type
+GenString = fn len cap encoding doIntern ->
+    <type def>
+
+String = GenString (LenDCS StoredInAllocatedMem) (CapDCS StoredInAllocatedMem) UTF8 Yes
+CString = GenString NullTerminated ReserveExact ASCII No
+

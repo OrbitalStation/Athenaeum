@@ -1,13 +1,17 @@
-* I had to say "no" to Kotlin-style lambda expressions
-* It was a difficult decision to make, but it helps consistency,
-*   since adding a syntactic sugar *over a syntactic sugar* is overkill,
-*   plus `{ x -> x }` is not that much easier to read compared to `fn x -> x`
-* Compare two(hypothetical) code snippets:
-* Kotlin's
+* Two types of lambdas: `fn <args> -> <body>` and `{ [optionalArgs ->] <body> }`
+* The `fn` form should be used when defining a top-level or `val`-level function,
+*     pattern-matching or where a `do` block is typically used (e.g. `while`, `for` fns)
+* The `{ ... }` form should be used in single line expressions where `fn` would be ugly
+*     and nowhere else
+* The closing bracket of `{ ... }` cannot be placed on the same column as the main line in `do`
+*     blocks and top-level, thus it will be very ugly
+* `{ ... }` also implicitly binds an argument `x`, similarly to Kotlin's `it`
+
+* Kotlin
 * `seq.withIndex().filter{ i, v -> v % i == 0 }.map{ it.second }.toSet()`
-* Athenaeum's
-* `seq :enumerate :filter fn i, v -> v % i == 0 :map fn x -> x.second :collect Set`
-* IDK, second is also alright
+
+* Athenaeum
+* `seq :enumerate :filter { i, v -> v mod i == 0 } :map { x.second } :to Set`
 
 * `fn a -> b` == Haskell's `\a -> b`
 * `fn a b c -> d` == `fn a -> fn b -> fn c -> d`

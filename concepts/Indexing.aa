@@ -1,0 +1,76 @@
+a = [1 2 3]
+
+* `IO` because it may panic
+_[_] : CollectionOf a -> IO a
+_[_] = operator fn collection index -> collection :at index :expect "errMsg"
+
+* Starts at 1
+a[1] == 1
+a[2] == 2
+a[3] == 3
+
+* Panics
+a[0]
+* Panics
+a[4]
+
+* Starts at 0 (traditional 0-based offset-oriented "indexing")
+a :offset 0 == 1
+a :offset 1 == 2
+a :offset 2 == 3
+
+* Panics
+a :offset 3
+
+* Non-panicking indexing
+a :at 1 == Some 1
+a :at 2 == Some 2
+a :at 3 == Some 3
+
+a :at 0 == None
+a :at 4 == None
+
+* Non-panicking offset indexing
+a :offsetAt 0 == Some 1
+a :offsetAt 1 == Some 2
+a :offsetAt 2 == Some 3
+
+a :offsetAt 3 == None
+
+* Unsafe unchecked indexing
+a :atUnchecked 1 == 1
+a :atUnchecked 2 == 2
+a :atUnchecked 3 == 3
+
+a :atUnchecked 0 == the `before` value of an array. May cause memory error, so you would generally want to avoid this
+a :atUnchecked 4 == the `after` value of an array. May cause memory error, so you would generally want to avoid this
+
+* Unsafe unchecked offset indexing
+a :offsetUnchecked 0 == 1
+a :offsetUnchecked 1 == 2
+a :offsetUnchecked 2 == 3
+
+a :offsetUnchecked 3 == the `after` value of an array. May cause memory error, so you would generally want to avoid this
+
+* Prints 1\n2\n3\n
+for a fn item -> do
+	println "{item}"
+
+* The same as above with explicit indexing
+* `..` is `[a; b]` range
+for 1..(a :len) fn index -> do
+	println "{a[index]}"
+
+* The same as above with `offset`
+for 0..<(a :len) fn off -> do
+	println "{a :offset off}"
+
+* 1-based indexing is actually not in any way slower than `0`-based because it's the same offsets
+*     under the hood
+* So if hex.4000 is the memory address for an array, then `:offset n` would calculate the result memory
+*     location as `hex.4000 + n * (sizeof a)`, where `a` is the type of the array's elements
+* And `arr[n]` would calculate location as `(hex.4000 - sizeof a) + n * (sizeof a)`
+* The `(hex.4000 - sizeof a)` part is a constant and thus it is calculated during compile time
+* So for a=Int32 for example, `arr[n]` would calculate as `hex.3FFC + n * 4` or as `hex.3FFC + (n << 2)`
+* No additional `- 1` in runtime because it happens in compile time and so there are no perfomance cost for 1-based indexing
+

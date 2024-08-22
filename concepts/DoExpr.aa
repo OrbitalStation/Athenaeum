@@ -11,12 +11,6 @@
 * xxx
 * xxx >> yyy
 *
-* * Actually `do` performs a bit differently, since it also prepends `AA.MonadicMix.mmix` to the monadic chain
-* *   and appends `AA.MonadicMix.removePure` to the end
-* *   if there is more than a single statement:
-* do
-*   xxx
-*   yyy
-*
-* * Above unfolds into (`->>` is Athenaeum's `>>` of Haskell)
-* AA.MonadicMix.mmix ->> xxx ->> yyy ->> AA.MonadicMix.removePure
+* * Actually `do` performs a bit differently, since it also automatically evaluates `State` and `EarlyReturn` monads,
+* *     plus it also functions as a lifting level for `AA.Implicit.Lift`
+

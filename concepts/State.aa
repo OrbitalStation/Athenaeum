@@ -1,0 +1,30 @@
+in AA.State only state _:=_
+
+factorial : Uint -> Uint
+factorial = fn n -> do
+    result = state 1
+    i = state n
+    while { i > 0 } do
+        result :*= i
+        i :-= 1
+    return result
+
+state : a -> State a
+_:*=_ : Mul a b a => State a -> b -> 
+
+factorial = fn n -> state 1
+    >>= fn result -> state n
+    >>= fn i -> while {
+        i >>=
+    }
+
+factorial : Uint -> Uint
+factorial = fn n -> runState do
+    put (1, n)
+    infiniteloop do
+        result, i <- get
+        if not (i > 0) then break
+        put (result * i, i - 1)
+    result, _ <- get
+    return result
+

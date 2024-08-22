@@ -1,5 +1,5 @@
-* There are 3(4) types of literals: string, int and float
-* (Also the `fn` expression but IDK if that counts as literal)
+* There are 4(5) types of literals: string, int, float and array
+* (Also the `fn` expressions but IDK if that counts as literal)
 
 * ***************************** Int literals
 * `-1` and other negatives are not builtin
@@ -37,7 +37,7 @@
 *       Ones taking strings however can be used to convert arbitrary non-compile time strings
 *       Probably not very useful since they are all just aliases, but still
 *       Nice lil' stdlib shortcut (weak argument)
-*   c). They all can be defined similarly to `bin = fn str -> str :parseWithRadix Int 2 :unwrap`,
+*   c). They all can be defined similarly to `bin = fn str -> consteval str :parseWithRadix Int 2 :unwrap`,
 *           whereas it would require a different non-very-trivial function to convert base 10 ints to base n ones
 * `bin` and `oct` also take string for consistency with `hex`
 
@@ -51,7 +51,7 @@
 
 * Exponential
 * Not built-in since this is a rarely used feature plus it unnecessarily burdens the grammar
-* Instead of writing `3.14e10` you can write `3.14 * 10^10` or use specially defined function `exp`:
+* Instead of writing `3.14e10` you can write `3.14 * 10**10` or use specially defined function `exp`:
 *     `3.14 :exp 10`
 
 * ***************************** String literals
@@ -63,6 +63,9 @@
 * `a . b` == `(a "b")`
 * Used as a way to denote field access
 a.b
+
+* `{whitespace}.a` == "a" 
+.a
 
 * Escape sequences
 * Yep, they are not built-in

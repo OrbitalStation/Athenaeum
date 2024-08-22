@@ -1,0 +1,23 @@
+* TODO
+
+* `!a` creates an error type that is specially defined as a set of all possible errors that might
+*     lead to this point (this is supported by the compiler)
+
+* `err!a` creates a type that is essentially `err + a` but with extra niceties for error handling
+
+OutOfMemory =
+    .inner : Unit *
+
+PageFault   =
+    .pageId : Usize *
+
+AllocatorNotFound =
+    .msg : String *
+
+* `error` is kind of like Rust's thiserror
+AllocationErr = OutOfMemory + PageFault + AllocatorNotFound
+
+GlobalErr = error [AllocationErr AA.FS.FSErr]
+
+
+

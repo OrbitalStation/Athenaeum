@@ -1,4 +1,4 @@
-* Corresponds to mathematical range/slice/interval `[a; b]`
+* Corresponds to mathematical range/slice/inter`[a; b]`
 * Rust's `a..=b`
 * The motivation for ranges is that while Python-like `range a b` would be possible,
 *   we have custom operators and so it is not a complexity in the grammar at all
@@ -7,19 +7,23 @@
 * This form is expected to be the most often used because of `1..(collection :len)`
 a..b
 
-* Corresponds to mathematical range/slice/interval `(a; b]`
+* Corresponds to mathematical range/slice/inter`(a; b]`
 * Rust's `(a + 1)..=b`
 * Rust has no notion of these, which is understandable since it's likely more or less useless
 * It however adds consistency to the language since we incorporate all typical mathematical
 *   notions of slices/ranges/intervals, thus it should be kept in spite of its uselessness
 a<..b
 
-* Corresponds to mathematical range/slice/interval `[a; b)`
+* Corresponds to mathematical range/slice/inter`[a; b)`
 * Rust's `a..b`
 * Probably second most used after `a..b`
 a..<b
 
-* Corresponds to mathematical range/slice/interval `(a; b)`
+* Corresponds to mathematical range/slice/inter`(a; b)`
 * Rust's `(a + 1)..b`
 * Again, not clear who would want to use this, but consistency is important
 a<..<b
+
+
+There are also unary forms `_..`, `.._` and so on for other range variants
+

@@ -3,23 +3,23 @@
 *     <h1 color="red">Hello!</h1>
 *     <p>
 *         Please support me on
-*         <a href="https://buymeacoffe.com">BuyMeACoffee</a>
+*         <a href="https://buymeacoffee.com">BuyMeACoffee</a>
 *         .
 *     </p>
 *     <p>I would appreciate that.</p>
 * </body>
 * </html>
 
-in AA.Html *
+in AA.Html only * 
 
-main :: Html
-out main = html do
+page : Html
+page = html do
     body do
         h1 :color "red" do
             text "Hello!"
         p do
             text "Please support me on"
-            a :href "https://buymeacoffe.com" do
+            a :href "https://buymeacoffee.com" do
                 text "BuyMeACoffee"
             text "."
         p do

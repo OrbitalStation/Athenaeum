@@ -1,53 +1,70 @@
-bot :sendMessage
-	|> with .text                  message
-    |> with .chatId                psychChatId
-    |> with .parseMode             ParseMode.HTML
-    |> with .disableWebPagePreview Yes
-    :build
-    :await
+bot :sendMessage message
+	|> with .chatId psychChatId
+	|> with .parseMode ParseMode.HTML
+	|> with .disableWebPagePreview Yes
+	|> with .otherArgs sth
+	:build
+	:await
 
+* REWORK
 * Where
-sendMessage :: Bot -> Builder (String -> Uint32 -> ParseMode -> Bool -> Future) ...
-sendMessage = fn bot -> builder fn text chatId parseMode disableWebPagePreview otherArgs -> do
-	val text, chatId, parseMode, disableWebPagePreview, otherArgs =
-		text                  :expect "Argument `text` is required",
-		chatId                :expect "Argument `chatId` is required",
-		parseMode             :or ParseMode.Markdown,
-		disableWebPagePreview :or No,
+sendMessage : Bot -> String -> Builder (Uint32 -> ParseMode -> Bool -> OtherArgs -> Future) ...
+sendMessage = fn bot text -> builder fn chatId parseMode disableWebPagePreview otherArgs -> do
+	chatId, parseMode, disableWebPagePreview, otherArgs =
+		chatId                :expect "Argument `chatId` is required"	
+		parseMode             :or { ParseMode.Markdown },
+		disableWebPagePreview :or { No },
 		otherArgs             :or sthElse,
 	...
 
+assert_ : Lazy Bool -> IO Unit
+assert_ = operator.prefix.10 fn condition -> do
+	* Returns the caller's actual expression that is passed as this argument
+	* For `assert a == 1` it's `a == 1` as an expression
+	orig = AA.Reflect.getCallerExpr condition
+	match orig.type do
+		AA.Reflect.ExprType.Operator case { x :to String == "==" } => fn op -> do
+			* We know it is an `==` operator application so handle it as Rust's `assert_eq!` and not `assert!`
+			...
+		otherwise => pass
+
+assert a == 1
+
+* ???
+println "{}"
+println "{[1 3 0] :iter :sortDesc}"
 
 
+* OLD vvv
 
 * --New
-* `consteval` fn transforms `F_Panic Type` to `Type` by evaluating `F_IO` in comptime
-Builder :: Type -> Type
+* `consteval` fn transforms `IO Type` to `Type` by evaluating `IO` in comptime
+Builder : Type -> Type
 Builder = fn OrigFnTy -> consteval do
-	val argsCount = AA.Fn.getArgsCount origFnTy :expect fn -> "Expected a function type, got {debug origFnTy}"
-	return type
-		.names    :: Array String argsCount *
-		.function :: OrigFnTy               *
+	argsCount = AA.Fn.getArgsCount origFnTy :expect { "Expected a function type, got {debug origFnTy}" }
+	return
+		.names    : Array String argsCount *
+		.function : OrigFnTy               *
 
 
 * --Old
 * `const Type` means Zig's `comptime type`
 * `const` fn ensures that the value given to it will be available at compile time
 * It returns the same value, but with an implicit mark that it is guaranteed to be comptime
-* `consteval` fn transforms `F_Panic Type` to `Type` by evaluating `F_IO` in comptime
-Builder :: const Type -> const Type
+* `consteval` fn transforms `F_Panic Type` to `Type` by evaluating `IO` in comptime
+Builder : const Type -> const Type
 Builder = fn OrigFnTy -> consteval do
-	val argsCount = AA.Fn.getArgsCount origFnTy :expect fn -> "Expected a function type, got {debug origFnTy}"
-	return type
-		.names    :: Array String argsCount *
-		.function :: OrigFnTy               *
+	argsCount = AA.Fn.getArgsCount origFnTy :expect { "Expected a function type, got {debug origFnTy}" }
+	return
+		.names    : Array String argsCount *
+		.function : OrigFnTy               *
 
 
 
 
-build :: Builder 
+build : Builder 
 build = fn builder -> 
 
-sendMessage = fn bot -> new Builder (array "text", "chatId", "parseMode", "disableWebPagePreview", "otherArgs") fn text chatId parseMode disableWebPagePreview otherArgs -> do
+sendMessage = fn bot -> new Builder ["text" "chatId" "parseMode" "disableWebPagePreview" "otherArgs"] fn text chatId parseMode disableWebPagePreview otherArgs -> do
 	<original function>
 

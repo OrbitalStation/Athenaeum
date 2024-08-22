@@ -8,17 +8,18 @@
 * On the bright side, you can define custom data types, such as `dictionary[...]`, `linkedList[...]`, etc.
 
 * `new String` does not initialize string as POD, instead follows this algorithm:
-new :: (ty :: CompTime[Type]) -> <args> -> ty
-new = fn ty -> do
+new : (ty : CompTime[Type]) -> <args> -> ty
+new = out fn ty -> do
     if :isSumType ty then panic "cannot create a sum type via `new`"
-    val fields = ty :getFields :unwrap
-    val areAllFieldsOut = not fields :map (fn x -> not x.visibility :isOut) :any
-    val nonPODInstance = array ty :instance NonPOD
-    areAllFieldsOut, nonPODInstance :isSome |> fn
-        Yes, Yes -> panic "cannot decide which method of creation of {ty} to use: `NonPOD` or reflection"
-        No,  No  -> panic "cannot create {ty}: no ways available"
-        Yes, No  -> return <| createPOD fields
-        No,  Yes -> return <| createNonPOD (nonPODInstance :unwrap)
-where
-    createPOD = fn fields -> ...
-    createNonPO = fn nonPODInstance -> ...
+    fields = ty :getFields :unwrap
+    areAllFieldsOut = not fields :map { not x.visibility :isOut } :any
+    nonPODInstance = ty :getInstance NonPOD
+    match (areAllFieldsOut, nonPODInstance :isSome) do
+        Yes, Yes => panic "cannot decide which method of creation of {ty} to use: `NonPOD` or reflection"
+        No,  No  => panic "cannot create {ty}: no ways available"
+        Yes, No  => return createPOD fields
+        No,  Yes => return createNonPOD (nonPODInstance :unwrap)
+
+createPOD = fn fields -> ...
+createNonPO = fn nonPODInstance -> ...
+

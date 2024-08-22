@@ -1,61 +1,152 @@
-* I had to say no to the `choose` expression because:
-* 1. It was extra syntax and thus - bad
-*    It couldn't have been an ordinary function because it had pattern-matching feature
-*    How would the expression below be transformed into an ordinary fn call?
-*    `choose x
-*        y => y`
-*    It introduces a new variable `y` which is then used
-*    Normal function cannot do this, and so `choose` must be built-in
-* 2. It and `fn` were the only two places where pattern-matching occurred,
-*        which by that point looked a bit more than just a syntactic sugar
-*    (also in `do` but its merely sugar over `fn` so doesn't count)
-* 3. `fn` can easily do its job(see the example below)
-* 4. `fn` replacement allows for shorter code + it looks really close to Haskell's pattern-matching
-* 5. `choose x ...` can easily be simulated by `x |> fn ...` thus eliminating all need for it
-
 * Haskell
 and :: Bool -> Bool -> Bool
 and Yes b = b
 and No  _ = No
 
 * Athenaeum
-and :: Bool -> Bool -> Bool
-and = fn
-    Yes b -> b
-    No  _ -> No
+and : Bool -> Bool -> Bool
+and = fn a b -> match a do
+    Yes => b
+    No  => No
 
-* Old `choose` expression
-and :: Bool -> Bool -> Bool
-and = fn a b -> choose a, b
-    Yes, b => b
-    No,  _ => No
+and2 : Bool -> Bool -> Bool
+and2 = fn a b -> match (a, b) do
+    Yes, otherwise => fn b -> b
+    No,  otherwise => No
 
+fizzbuzz : IO Unit
+fizzbuzz = for 1..100 fn i -> match (i % 3 == 0, i % 5 == 0) do
+    Yes, Yes => println "FizzBuzz"
+    Yes, No  => println "Fizz"
+    No,  Yes => println "Buzz"
+    No,  No  => println "{i}"
 
-* A collection is pattern-matched against tuple with n elements
-*     if it contains at least n - 1 elements
-* First n - 1 elements of the collection go into first n - 1 elements of the tuple
-*     with the last argument of the tuple being the rest of the collection
-* E.g. for `head <| array 1, 2, 3` the `head` binding is `1` and `_` is `array 2, 3`
-* To check for an empty array use `empty`
-* There is no builtin way to check for an exact number of elements,
-*     but you can check for n - 1 elements and then check that the last argument's is 1 and then take it
-head :: List a -> ?a
-head = fn
-	head, _ -> Some head
-	empty   -> None
+map : (a -> b) -> a? -> b?
+map = fn f opt -> match opt do
+    Some => fn x -> Some (f x)
+    None => None
 
-tail :: List a -> List a
-tail = fn
-	_, tail -> tail
-	x       -> x 
+map2 : (a -> b -> c) -> a? -> b? -> c?
+map2 = fn f a b -> match (a, b) do
+    Some, Some => fn a b -> Some (f a b)
+    otherwise  => None
 
-popFront :: List a -> ?a * List a
-popFront = fn
-	head, tail -> (Some head), tail
-	x          -> None, x
+mapDeep : (a -> b) -> a?? -> b?
+mapDeep = fn f optopt -> match optopt do
+    Some . Some => fn x -> Some (f x)
+    otherwise   => None
 
+mapDeep2 : (a -> b -> c) -> a?? -> b? -> c?
+mapDeep2 = fn f a b -> match (a, b) do
+    Some . Some, Some . Some => fn a b -> Some (f a b)
+    otherwise                => None
 
-* REWORK vvv, because now `empty` is a binding and not a pattern
+mapk : IO Unit
+mapk = do
+    Enum =
+        .Var1 : Int32  +
+        .Var2 : Int32  +
+        .Var3 : String +
+    in variants Enum only *
+    
+    * Got 5
+    * Got 7
+    * Message: Aloha!
+    for [(Var1 5) (Var2 7) (Var3 "Aloha")] fn v -> match v do
+        Var1, Var2 => fn x -> println "Got {x}"
+        Var3       => fn x -> println "Message: {x}!"
+
+mapOr : (Unit -> a) -> a? -> a
+mapOr : Lazy a -> a? -> a
+mapOr = fn f opt -> match opt do
+    Some => id
+    None => f pass
+
+* Rust
+fn main() -> std::io::Result <()> {
+    print!("Please enter a number: ");
+    std::io::stdout().flush()?;
+    let mut strbuf = String::new();
+    std::io::stdin().get_line(&mut strbuf)?;
+    let num = strbuf.parse::<i32>().expect("You did not enter a number");
+    match num {
+        1     => println!("You entered '1'!"),
+        2     => println!("Two is two and 2 is too"),
+        3 | 7 => println!("Three or seven is a fairly common choice"),
+        x@4..10 => println!("Your number is less than ten and in fact is {x}"),
+        x if x % 2 == 0 => "{x} is even"
+        x if x < 100 => "Your number is odd and less than a hundred!"
+        x => println "Your number is {x} and I have no idea what to do about it"
+    }
+    Ok(())
+}
+
+* Athenaeum
+main : IO Unit!
+main = do
+    printFlush "Please enter a number: "
+    num = scanln? :into Int32 :err? { "You did not enter a number" }
+    match num do
+        1    => println "You entered '1'!"
+        2    => println "Two is two and 2 is too"
+        3, 7 => println "Three or seven is a fairly common choice"
+        4..9 => fn x -> println "Your number is less than ten and in fact is {x}"
+        case { x mod 2 == 0 } => fn x -> "{x} is even"
+        case { x < 100 } => "Your number is odd and less than a hundred!"
+        otherwise => fn x -> println "Your number is {x} and I have no idea what to do about it"
+    return Ok pass
+
+************************* Sequences
+* Arrays do not support destructuring
+head : Array a l -> a?
+head = fn a -> a :at 1
+
+tail : Array a l -> Array a (l saturatingSub 1)
+tail = fn a -> a[2..]
+
+popFront : Array a l -> a? * Array a (l saturatingSub 1)
+popFront = fn a -> a :at 1, a[2..]
+
+popBack : Array a l -> a? * Array a (l saturatingSub 1)
+popBack = fn a -> a :at (a :len), a[..<(a :len)]
+
+* Rust's `if let` and `let else`
+if let Some(cmd_arg) = possible_arg {
+    builder.push(cmd_arg);
+    println("Thanks for arg!")
+}
+
+if let Pokemon::Pikachu(stats) = pokemon {
+    println("Pikachu's electrification: {}", stats.electrification)
+}
+
+let Ok(user_id) = db.find_user_by_name("Jakob") else { return -1 };
+
+* Athenaeum
+inspect : a? -> (a -> IO Unit) -> IO Unit
+inspect = fn opt ifSome -> match opt do
+    Some => ifSome
+    None => identity
+
+inspect2 = fn opt isSome -> incase opt Some isSome
+inspect3 = fn opt -> incase opt Some
+inspect4 = flip incase Some
+
+incase : a -> (b -> a) -> (b -> IO Unit) -> IO Unit
+incase = fn toMatch variant toDo -> match toMatch do
+    variant   => toDo
+    otherwise => pass
+
+incase possibleArg Some fn cmdArg -> do
+    builder :++= cmdArg
+    println "Thanks for arg!"
+
+incase pokemon Pokemon.Pikachu fn stats -> do
+    println "Pikachu's electrification: {stats.electrification}"
+
+val userId = db :findUserByName "Jakob" :or { return -1 }
+
+* vvv shit because we do not allow multiple arguments anymore
 * Is parsing unambiguous?
 * Yes, because of the distinction of first lowercase/uppercase letter
 fn
